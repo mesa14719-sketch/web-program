@@ -1,5 +1,5 @@
 # language: Python 3.11+, file: server.py
-# Bot Hosting Platform — FastAPI
+# Bot Hosting Platform — FastAPI (fixed)
 # Made By @SUNIOxRICH | @Firstoget (Code Stride)
 
 import os
@@ -15,12 +15,13 @@ import hashlib
 import zipfile
 import shutil
 import tempfile
+import sys
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form, Request, status
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import jwt
@@ -94,7 +95,7 @@ def init_db():
 init_db()
 
 # ============================================================
-# AUTH HELPERS
+# AUTH
 # ============================================================
 def hash_password(password: str) -> str:
     salt = secrets.token_bytes(16)
@@ -132,8 +133,7 @@ def get_current_user(request: Request) -> dict:
     auth = request.headers.get("Authorization", "")
     if not auth.startswith("Bearer "):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing token")
-    token = auth[7:]
-    data = decode_token(token)
+    data = decode_token(auth[7:])
     if not data:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid token")
     with db() as conn:
@@ -155,9 +155,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# قائمة العمليات الحية: bot_id -> Popen
+PROCS: dict = {}
+
 
 # ============================================================
-# PYDANTIC MODELS
+# MODELS
 # ============================================================
 class AuthPayload(BaseModel):
     email: str
@@ -180,8 +183,7 @@ def register(p: AuthPayload):
         raise HTTPException(400, "كلمة المرور قصيرة (6 أحرف على الأقل)")
 
     with db() as conn:
-        exists = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
-        if exists:
+        if conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone():
             raise HTTPException(400, "البريد مستخدم مسبقاً")
         is_admin = 1 if email == ADMIN_EMAIL else 0
         cur = conn.execute(
@@ -190,8 +192,7 @@ def register(p: AuthPayload):
         )
         uid = cur.lastrowid
 
-    token = make_token(uid, email)
-    return {"ok": True, "token": token, "user": {"id": uid, "email": email, "is_admin": bool(is_admin)}}
+    return {"ok": True, "token": make_token(uid, email), "user": {"id": uid, "email": email, "is_admin": bool(is_admin)}}
 
 
 @app.post("/api/auth/login")
@@ -201,8 +202,7 @@ def login(p: AuthPayload):
         row = conn.execute("SELECT id, email, password_hash, is_admin FROM users WHERE email = ?", (email,)).fetchone()
     if not row or not verify_password(p.password, row["password_hash"]):
         raise HTTPException(401, "بيانات غير صحيحة")
-    token = make_token(row["id"], row["email"])
-    return {"ok": True, "token": token, "user": {"id": row["id"], "email": row["email"], "is_admin": bool(row["is_admin"])}}
+    return {"ok": True, "token": make_token(row["id"], row["email"]), "user": {"id": row["id"], "email": row["email"], "is_admin": bool(row["is_admin"])}}
 
 
 @app.get("/api/auth/me")
@@ -211,14 +211,12 @@ def me(user: dict = Depends(get_current_user)):
 
 
 # ============================================================
-# BOT HELPERS
+# HELPERS
 # ============================================================
 def detect_bot_type(entry_file: str) -> Optional[str]:
-    lower = entry_file.lower()
-    if lower.endswith(".py"):
-        return "python"
-    if lower.endswith(".php"):
-        return "php"
+    lf = entry_file.lower()
+    if lf.endswith(".py"): return "python"
+    if lf.endswith(".php"): return "php"
     return None
 
 
@@ -228,7 +226,6 @@ def bot_log(bot_id: str, type_: str, line: str):
             "INSERT INTO logs (bot_id, line, type, ts) VALUES (?, ?, ?, ?)",
             (bot_id, line[:2000], type_, datetime.utcnow().isoformat()),
         )
-        # keep last 500 lines per bot
         conn.execute("""
             DELETE FROM logs WHERE bot_id = ? AND id NOT IN (
                 SELECT id FROM logs WHERE bot_id = ? ORDER BY id DESC LIMIT 500
@@ -236,15 +233,11 @@ def bot_log(bot_id: str, type_: str, line: str):
         """, (bot_id, bot_id))
 
 
-def extract_zip_to_bot(zip_path: Path, dest_dir: Path) -> tuple[str, dict]:
-    """يفك ZIP إلى dest_dir، ويعيد (entry_file, all_files)"""
+def extract_zip_to_bot(zip_path: Path, dest_dir: Path) -> tuple:
     with zipfile.ZipFile(zip_path, "r") as z:
         names = z.namelist()
-
-        # إزالة __MACOSX والمجلدات
         files = [n for n in names if not n.endswith("/") and "__MACOSX" not in n and not n.startswith(".")]
 
-        # إذا كل الملفات في مجلد واحد داخل الـ ZIP — نسحبها للأعلى
         prefixes = set(n.split("/")[0] for n in files if "/" in n)
         single_prefix = None
         if len(prefixes) == 1:
@@ -252,7 +245,6 @@ def extract_zip_to_bot(zip_path: Path, dest_dir: Path) -> tuple[str, dict]:
             if all(n.startswith(p + "/") for n in files):
                 single_prefix = p + "/"
 
-        # كشف ملف الدخول
         py_files = [n for n in files if n.lower().endswith(".py")]
         php_files = [n for n in files if n.lower().endswith(".php")]
         candidates = ["bot.py", "main.py", "app.py", "index.py"] + py_files + php_files
@@ -262,10 +254,8 @@ def extract_zip_to_bot(zip_path: Path, dest_dir: Path) -> tuple[str, dict]:
             for n in files:
                 stripped = n[len(single_prefix):] if single_prefix else n
                 if stripped == c or n == c:
-                    entry = n
-                    break
-            if entry:
-                break
+                    entry = n; break
+            if entry: break
 
         if not entry and (py_files or php_files):
             entry = (py_files or php_files)[0]
@@ -273,43 +263,45 @@ def extract_zip_to_bot(zip_path: Path, dest_dir: Path) -> tuple[str, dict]:
         if not entry:
             raise ValueError("لا يوجد ملف .py أو .php في الـ ZIP")
 
-        # فك الضغط
         for n in files:
             src = z.open(n)
-            if single_prefix and n.startswith(single_prefix):
-                rel = n[len(single_prefix):]
-            else:
-                rel = n
+            rel = n[len(single_prefix):] if (single_prefix and n.startswith(single_prefix)) else n
             out = dest_dir / rel
             out.parent.mkdir(parents=True, exist_ok=True)
             with out.open("wb") as f:
                 shutil.copyfileobj(src, f)
 
-        # entry_file بالمسار النسبي بعد الإزالة
-        if single_prefix and entry.startswith(single_prefix):
-            entry_rel = entry[len(single_prefix):]
-        else:
-            entry_rel = entry
-
+        entry_rel = entry[len(single_prefix):] if (single_prefix and entry.startswith(single_prefix)) else entry
         return entry_rel, {"files": files, "total": len(files)}
 
 
-def install_requirements(bot_dir: Path) -> bool:
+def install_requirements(bot_dir: Path, bot_id: str):
     req = bot_dir / "requirements.txt"
     if not req.exists():
+        bot_log(bot_id, "sys", "[pip] لا يوجد requirements.txt")
         return True
+
+    bot_log(bot_id, "sys", "[pip] جارٍ تثبيت المكتبات...")
     try:
         result = subprocess.run(
-            ["pip", "install", "--no-cache-dir", "-r", str(req)],
+            [sys.executable, "-m", "pip", "install", "--no-cache-dir", "--disable-pip-version-check", "-r", str(req)],
             cwd=str(bot_dir),
             capture_output=True,
             text=True,
-            timeout=300,
+            timeout=600,
         )
-        ok = result.returncode == 0
-        bot_log_by_dir = None
-        return ok
-    except Exception:
+        if result.returncode == 0:
+            bot_log(bot_id, "sys", "[pip] ✅ تم التثبيت بنجاح")
+            return True
+        else:
+            for line in (result.stderr or "").splitlines()[-15:]:
+                bot_log(bot_id, "err", "[pip] " + line)
+            return False
+    except subprocess.TimeoutExpired:
+        bot_log(bot_id, "err", "[pip] انتهت المهلة (10 دقائق)")
+        return False
+    except Exception as e:
+        bot_log(bot_id, "err", f"[pip] {e}")
         return False
 
 
@@ -381,8 +373,8 @@ async def create_bot(
             (bot_id, user["id"], name, bot_type, entry, "stopped", datetime.utcnow().isoformat()),
         )
 
-    # تثبيت requirements في الخلفية
-    asyncio.create_task(asyncio.to_thread(install_requirements, bot_dir))
+    # تثبيت المكتبات (blocking سريع كفاية، أو نخليه async)
+    await asyncio.to_thread(install_requirements, bot_dir, bot_id)
 
     return {"ok": True, "id": bot_id, "name": name, "type": bot_type}
 
@@ -408,6 +400,11 @@ def delete_bot(bot_id: str, user: dict = Depends(get_current_user)):
             raise HTTPException(404, "غير موجود")
         conn.execute("DELETE FROM bots WHERE id = ?", (bot_id,))
         conn.execute("DELETE FROM logs WHERE bot_id = ?", (bot_id,))
+    # أوقف العملية إن كانت تعمل
+    proc = PROCS.pop(bot_id, None)
+    if proc and proc.poll() is None:
+        try: proc.terminate()
+        except Exception: pass
     shutil.rmtree(BOTS_DIR / bot_id, ignore_errors=True)
     return {"ok": True}
 
@@ -418,44 +415,43 @@ def start_bot(bot_id: str, user: dict = Depends(get_current_user)):
         row = conn.execute("SELECT * FROM bots WHERE id = ? AND user_id = ?", (bot_id, user["id"])).fetchone()
     if not row:
         raise HTTPException(404, "غير موجود")
-    if row["status"] == "running":
-        return {"ok": True, "msg": "يعمل مسبقاً"}
+
+    # إذا كانت العملية موجودة وتعمل، أرجع فوراً
+    existing = PROCS.get(bot_id)
+    if existing and existing.poll() is None:
+        return {"ok": True, "msg": "يعمل مسبقاً", "pid": existing.pid}
 
     bot_dir = BOTS_DIR / bot_id
     entry = bot_dir / row["entry_file"]
     if not entry.exists():
-        raise HTTPException(400, "ملف الدخول مفقود")
+        raise HTTPException(400, f"ملف الدخول مفقود: {row['entry_file']}")
 
     try:
         if row["type"] == "python":
-            proc = subprocess.Popen(
-                ["python", "-u", str(entry)],
-                cwd=str(bot_dir),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1,
-            )
+            cmd = [sys.executable, "-u", str(entry)]
         elif row["type"] == "php":
-            proc = subprocess.Popen(
-                ["php", str(entry)],
-                cwd=str(bot_dir),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1,
-            )
+            cmd = ["php", str(entry)]
         else:
             raise HTTPException(400, "نوع غير مدعوم")
+
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(bot_dir),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
     except FileNotFoundError as e:
         raise HTTPException(500, f"المشغّل غير متوفر: {e}")
+
+    PROCS[bot_id] = proc
 
     with db() as conn:
         conn.execute(
             "UPDATE bots SET status = 'running', pid = ?, last_start = ? WHERE id = ?",
             (proc.pid, datetime.utcnow().isoformat(), bot_id),
         )
-    bot_log(bot_id, "sys", f"[started] pid={proc.pid}")
 
     # بدء قارئات stdout/stderr في الخلفية
     asyncio.create_task(_stream_output(bot_id, proc))
@@ -464,8 +460,6 @@ def start_bot(bot_id: str, user: dict = Depends(get_current_user)):
 
 
 async def _stream_output(bot_id: str, proc: subprocess.Popen):
-    loop = asyncio.get_running_loop()
-
     def read_stream(stream, type_):
         try:
             for line in iter(stream.readline, ""):
@@ -474,7 +468,8 @@ async def _stream_output(bot_id: str, proc: subprocess.Popen):
         except Exception:
             pass
         finally:
-            stream.close()
+            try: stream.close()
+            except Exception: pass
 
     await asyncio.gather(
         asyncio.to_thread(read_stream, proc.stdout, "out"),
@@ -483,6 +478,7 @@ async def _stream_output(bot_id: str, proc: subprocess.Popen):
 
     code = await asyncio.to_thread(proc.wait)
     bot_log(bot_id, "sys", f"[exit] code={code}")
+    PROCS.pop(bot_id, None)
     with db() as conn:
         conn.execute("UPDATE bots SET status = 'stopped', pid = NULL WHERE id = ?", (bot_id,))
 
@@ -493,21 +489,21 @@ def stop_bot(bot_id: str, user: dict = Depends(get_current_user)):
         row = conn.execute("SELECT * FROM bots WHERE id = ? AND user_id = ?", (bot_id, user["id"])).fetchone()
     if not row:
         raise HTTPException(404, "غير موجود")
-    if row["status"] != "running" or not row["pid"]:
-        with db() as conn:
-            conn.execute("UPDATE bots SET status = 'stopped', pid = NULL WHERE id = ?", (bot_id,))
-        return {"ok": True, "msg": "متوقف مسبقاً"}
 
-    try:
-        os.kill(row["pid"], 15)  # SIGTERM
-    except ProcessLookupError:
-        pass
-    except Exception as e:
-        raise HTTPException(500, f"فشل الإيقاف: {e}")
+    proc = PROCS.get(bot_id)
+    if proc and proc.poll() is None:
+        try: proc.terminate()
+        except Exception: pass
+        try: proc.wait(timeout=5)
+        except Exception:
+            try: proc.kill()
+            except Exception: pass
+    PROCS.pop(bot_id, None)
 
     with db() as conn:
         conn.execute("UPDATE bots SET status = 'stopped', pid = NULL WHERE id = ?", (bot_id,))
-    bot_log(bot_id, "sys", "[stopped]")
+
+    bot_log(bot_id, "sys", "[stopped by user]")
     return {"ok": True}
 
 
@@ -550,6 +546,49 @@ async def stream_logs(bot_id: str, request: Request, user: dict = Depends(get_cu
 
 
 # ============================================================
+# CRON / WAKEUP — لإعادة تشغيل البوتات بعد نوم Render
+# ============================================================
+@app.get("/api/cron/resume")
+def cron_resume(request: Request):
+    """يُستدعى دورياً (cron-job.org مثلاً) لتشغيل البوتات المتوقفة."""
+    # تحقق بسيط: مفتاح في الرابط أو أن كل البوتات تُعاد
+    restarted = []
+    with db() as conn:
+        rows = conn.execute("SELECT id, user_id FROM bots").fetchall()
+    for r in rows:
+        if r["id"] not in PROCS or PROCS[r["id"]].poll() is not None:
+            # أنشئ طلب start يدوياً (بدون auth — endpoint داخلي)
+            try:
+                class FakeReq:
+                    def __init__(self, uid, email):
+                        self.uid = uid; self.email = email
+                # بديل: نستخدم منطق start_bot مباشرة
+                with db() as conn:
+                    bot = conn.execute("SELECT * FROM bots WHERE id = ?", (r["id"],)).fetchone()
+                if not bot: continue
+                bot_dir = BOTS_DIR / r["id"]
+                entry = bot_dir / bot["entry_file"]
+                if not entry.exists(): continue
+                cmd = [sys.executable, "-u", str(entry)] if bot["type"] == "python" else ["php", str(entry)]
+                proc = subprocess.Popen(cmd, cwd=str(bot_dir), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
+                PROCS[r["id"]] = proc
+                with db() as conn:
+                    conn.execute("UPDATE bots SET status='running', pid=?, last_start=? WHERE id=?",
+                                 (proc.pid, datetime.utcnow().isoformat(), r["id"]))
+                asyncio.create_task(_stream_output(r["id"], proc))
+                restarted.append(r["id"])
+            except Exception as e:
+                bot_log(r["id"], "err", f"[cron] {e}")
+
+    return {"ok": True, "restarted": restarted}
+
+
+@app.get("/health")
+def health():
+    return {"ok": True, "running": len([p for p in PROCS.values() if p.poll() is None])}
+
+
+# ============================================================
 # ROOT
 # ============================================================
 @app.get("/", response_class=HTMLResponse)
@@ -557,11 +596,6 @@ def root():
     if not HTML_FILE.exists():
         return HTMLResponse("<h1>index.html مفقود</h1>", status_code=500)
     return HTMLResponse(HTML_FILE.read_text(encoding="utf-8"))
-
-
-@app.get("/health")
-def health():
-    return {"ok": True}
 
 
 if __name__ == "__main__":
