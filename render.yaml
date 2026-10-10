@@ -12,7 +12,3 @@ services:
         value: admin@example.com
       - key: PYTHON_VERSION
         value: 3.11.9
-    disk:
-      name: data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
