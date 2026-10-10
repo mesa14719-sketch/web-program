@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f0c29">
+    <title>🚀 لوحة استضافة البوتات</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #1a1a3e 50%, #0f0c29 100%);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(56, 239, 125, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+            animation: bgMove 20s ease-in-out infinite;
+        }
+        
+        @keyframes bgMove {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(5deg); }
+        }
+        
+        /* ==================== الحاوية ==================== */
+        .container {
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* ==================== البطاقة ==================== */
+        .card {
+            background: rgba(20, 20, 40, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 35px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 25px 70px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* ==================== الشعار ==================== */
+        .logo {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .logo-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .logo h1 {
+            font-size: 26px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea, #ec4899, #48dbfb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            background-size: 200% 200%;
+            animation: gradientShift 4s ease infinite;
+            margin-bottom: 6px;
+        }
+        
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .logo p {
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        
+        /* ==================== التبويبات ==================== */
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px;
+            border-radius: 14px;
+            margin-bottom: 25px;
+            gap: 5px;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .tab-btn:hover:not(.active) {
+            color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* ==================== النموذج ==================== */
+        .form-content {
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .form-content.active {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .form-group {
+            margin-bottom: 18px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #cbd5e1;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .input-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 15px 45px 15px 15px;
+            background: rgba(15, 15, 30, 0.8);
+            color: #e2e8f0;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            font-size: 15px;
+            font-family: inherit;
+            transition: all 0.3s;
+            outline: none;
+            direction: ltr;
+            text-align: left;
+        }
+        
+        .input-field::placeholder {
+            color: #64748b;
+            direction: rtl;
+            text-align: right;
+        }
+        
+        .input-field:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 25px rgba(102, 126, 234, 0.3);
+            background: rgba(20, 20, 40, 0.95);
+        }
+        
+        /* ==================== الأزرار ==================== */
+        .btn {
+            position: relative;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 800;
+            color: #fff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s ease;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+        
+        .btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 
+                0 8px 25px rgba(102, 126, 234, 0.4),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn.primary:hover {
+            box-shadow: 
+                0 12px 35px rgba(102, 126, 234, 0.6),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            box-shadow: 
+                0 8px 25px rgba(56, 239, 125, 0.4),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn.success:hover {
+            box-shadow: 
+                0 12px 35px rgba(56, 239, 125, 0.6),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn.google {
+            background: linear-gradient(135deg, #4285f4, #34a853);
+            box-shadow: 
+                0 8px 25px rgba(66, 133, 244, 0.4),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn.google:hover {
+            box-shadow: 
+                0 12px 35px rgba(66, 133, 244, 0.6),
+                inset 0 2px 0 rgba(255, 255, 255, 0.3);
+        }
+        
+        /* ==================== الفاصل ==================== */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+            color: #64748b;
+            font-size: 12px;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+        }
+        
+        /* ==================== خيارات إضافية ==================== */
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+            font-size: 13px;
+        }
+        
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+        
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+        
+        .forgot-link {
+            color: #4facfe;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        
+        .forgot-link:hover {
+            color: #00f2fe;
+        }
+        
+        /* ==================== الفوتر ==================== */
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            color: #64748b;
+            font-size: 12px;
+        }
+        
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        
+        .footer a:hover {
+            color: #a855f7;
+        }
+        
+        /* ==================== الإشعار ==================== */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(56, 239, 125, 0.5);
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-width: 90%;
+            text-align: center;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .toast.info {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+            box-shadow: 0 10px 30px rgba(79, 172, 254, 0.5);
+        }
+        
+        /* ==================== للهواتف ==================== */
+        @media (max-width: 480px) {
+            .card {
+                padding: 25px 20px;
+                border-radius: 20px;
+            }
+            
+            .logo-icon {
+                font-size: 50px;
+            }
+            
+            .logo h1 {
+                font-size: 22px;
+            }
+            
+            .input-field {
+                padding: 13px 42px 13px 13px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                padding: 14px;
+                font-size: 15px;
+            }
+        }
+        
+        /* شريط التمرير */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.03);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="card">
+            
+            <!-- الشعار -->
+            <div class="logo">
+                <div class="logo-icon">🚀</div>
+                <h1>لوحة الاستضافة</h1>
+                <p>منصة تشغيل بوتات Python</p>
+            </div>
+            
+            <!-- التبويبات -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('login')">
+                    🔐 تسجيل دخول
+                </button>
+                <button class="tab-btn" onclick="switchTab('register')">
+                    ✨ حساب جديد
+                </button>
+            </div>
+            
+            <!-- نموذج تسجيل الدخول -->
+            <div class="form-content active" id="loginForm">
+                
+                <div class="form-group">
+                    <label>📧 البريد الإلكتروني</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="email" 
+                            class="input-field" 
+                            placeholder="example@email.com"
+                            id="loginEmail"
+                        />
+                        <span class="input-icon">📧</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>🔒 كلمة المرور</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            class="input-field" 
+                            placeholder="••••••••"
+                            id="loginPassword"
+                        />
+                        <span class="input-icon">🔒</span>
+                    </div>
+                </div>
+                
+                <div class="options">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" checked />
+                        <span>تذكرني</span>
+                    </label>
+                    <a href="#" class="forgot-link">نسيت كلمة المرور؟</a>
+                </div>
+                
+                <button class="btn primary" onclick="fakeLogin()">
+                    🚀 دخول
+                </button>
+                
+                <div class="divider">أو</div>
+                
+                <button class="btn google" onclick="fakeGoogle()">
+                    🔵 الدخول بـ Google
+                </button>
+                
+            </div>
+            
+            <!-- نموذج إنشاء حساب -->
+            <div class="form-content" id="registerForm">
+                
+                <div class="form-group">
+                    <label>👤 الاسم الكامل</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            class="input-field" 
+                            placeholder="اسمك الكامل"
+                            id="regName"
+                        />
+                        <span class="input-icon">👤</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>📧 البريد الإلكتروني</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="email" 
+                            class="input-field" 
+                            placeholder="example@email.com"
+                            id="regEmail"
+                        />
+                        <span class="input-icon">📧</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>🔒 كلمة المرور</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            class="input-field" 
+                            placeholder="8 أحرف على الأقل"
+                            id="regPassword"
+                        />
+                        <span class="input-icon">🔒</span>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>🔐 تأكيد كلمة المرور</label>
+                    <div class="input-wrapper">
+                        <input 
+                            type="password" 
+                            class="input-field" 
+                            placeholder="أعد كتابة كلمة المرور"
+                            id="regPassword2"
+                        />
+                        <span class="input-icon">🔐</span>
+                    </div>
+                </div>
+                
+                <div class="options">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" />
+                        <span>أوافق على <a href="#" style="color:#4facfe;">الشروط</a></span>
+                    </label>
+                </div>
+                
+                <button class="btn success" onclick="fakeRegister()">
+                    ✨ إنشاء الحساب
+                </button>
+                
+            </div>
+            
+            <!-- الفوتر -->
+            <div class="footer">
+                💡 واجهة شكلية للعرض
+                <br>
+                <a href="https://t.me/BR_Go_16" target="_blank">🚀 المطور إبراهيم</a>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- الإشعار -->
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // ==================== تبديل التبويبات ====================
+        function switchTab(tab) {
+            // تحديث الأزرار
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // تحديث المحتوى
+            document.querySelectorAll('.form-content').forEach(form => {
+                form.classList.remove('active');
+            });
+            
+            if (tab === 'login') {
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.getElementById('registerForm').classList.add('active');
+            }
+        }
+        
+        // ==================== تسجيل الدخول (وهمي) ====================
+        function fakeLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                showToast('⚠️ املأ جميع الحقول', 'info');
+                return;
+            }
+            
+            showToast('✅ مرحباً بك! (واجهة شكلية)', 'success');
+        }
+        
+        // ==================== إنشاء حساب (وهمي) ====================
+        function fakeRegister() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const password2 = document.getElementById('regPassword2').value;
+            
+            if (!name || !email || !password || !password2) {
+                showToast('⚠️ املأ جميع الحقول', 'info');
+                return;
+            }
+            
+            if (password !== password2) {
+                showToast('❌ كلمتا المرور غير متطابقتين', 'info');
+                return;
+            }
+            
+            showToast('✨ تم إنشاء الحساب! (واجهة شكلية)', 'success');
+        }
+        
+        // ==================== Google (وهمي) ====================
+        function fakeGoogle() {
+            showToast('🔵 تسجيل Google (واجهة شكلية)', 'info');
+        }
+        
+        // ==================== الإشعار ====================
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast show';
+            if (type === 'info') toast.classList.add('info');
+            
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // ==================== Enter ====================
+        document.getElementById('loginPassword').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') fakeLogin();
+        });
+        
+        document.getElementById('regPassword2').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') fakeRegister();
+        });
+        
+        console.log('🚀 واجهة الاستضافة جاهزة');
+        console.log('⚠️ واجهة شكلية فقط - لا وظائف حقيقية');
+    </script>
+</body>
+</html>
