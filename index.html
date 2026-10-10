@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة استضافة البوتات</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;
+    --border:#30363d;--text:#c9d1d9;--muted:#8b949e;
+    --accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922;
+  }
+  body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+  button{font-family:inherit;cursor:pointer;border:none;transition:.15s}
+  input,textarea{font-family:inherit}
+
+  .hidden{display:none!important}
+
+  /* ============ AUTH ============ */
+  #auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+  .auth-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:32px;width:100%;max-width:400px}
+  .auth-box h1{font-size:24px;margin-bottom:6px;color:var(--accent)}
+  .auth-box p.sub{color:var(--muted);font-size:13px;margin-bottom:24px}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .field input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none}
+  .field input:focus{border-color:var(--accent)}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600}
+  .btn-primary{background:var(--accent);color:#0d1117}
+  .btn-primary:hover{background:#79b8ff}
+  .btn-success{background:var(--green);color:#0d1117}
+  .btn-danger{background:var(--red);color:#fff}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .btn-ghost:hover{background:var(--bg3)}
+  .btn-block{width:100%}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .auth-toggle{margin-top:16px;text-align:center;font-size:13px;color:var(--muted)}
+  .auth-toggle a{color:var(--accent);cursor:pointer;text-decoration:none}
+  .msg{padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px}
+  .msg-err{background:rgba(248,81,73,.1);color:var(--red);border:1px solid rgba(248,81,73,.3)}
+  .msg-ok{background:rgba(63,185,80,.1);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+
+  /* ============ APP ============ */
+  #app{display:none;min-height:100vh}
+  header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
+  header h1{font-size:18px;color:var(--accent)}
+  header .user{display:flex;align-items:center;gap:12px;font-size:13px}
+  header .user span{color:var(--muted)}
+  main{max-width:1200px;margin:0 auto;padding:24px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+  .topbar h2{font-size:20px}
+  .stat-bar{display:flex;gap:16px;font-size:13px;color:var(--muted)}
+  .stat-bar b{color:var(--text)}
+
+  .bots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  .bot-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;transition:.15s}
+  .bot-card:hover{border-color:var(--accent)}
+  .bot-card .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+  .bot-card .name{font-size:15px;font-weight:600;margin-bottom:4px;word-break:break-word}
+  .bot-card .meta{font-size:11px;color:var(--muted)}
+  .bot-card .status{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600}
+  .status.running{background:rgba(63,185,80,.15);color:var(--green)}
+  .status.stopped{background:rgba(248,81,73,.15);color:var(--red)}
+  .bot-card .actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+  .bot-card .actions button{flex:1;min-width:60px;padding:6px 10px;font-size:12px;border-radius:6px}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);background:var(--bg2);border:1px dashed var(--border);border-radius:10px;grid-column:1/-1}
+  .empty h3{color:var(--text);margin-bottom:6px;font-size:16px}
+
+  /* ============ MODAL ============ */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow:auto}
+  .modal h3{font-size:18px;margin-bottom:20px;color:var(--accent)}
+  .modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+  .modal .row button{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600}
+  .file-drop{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;transition:.15s}
+  .file-drop:hover{border-color:var(--accent);color:var(--text)}
+  .file-drop.has-file{border-color:var(--green);color:var(--green)}
+  .file-drop input{display:none}
+
+  /* ============ LOGS ============ */
+  .logs-box{background:#0a0e14;border:1px solid var(--border);border-radius:10px;padding:14px;height:400px;overflow-y:auto;font-family:'Consolas','Monaco',monospace;font-size:12px;line-height:1.55;direction:ltr;text-align:left}
+  .log-line{white-space:pre-wrap;word-break:break-all;margin-bottom:1px}
+  .log-out{color:#c9d1d9}
+  .log-err{color:#f85149}
+  .log-sys{color:#58a6ff}
+
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+  ::-webkit-scrollbar-thumb:hover{background:#484f58}
+
+  @media(max-width:600px){
+    main{padding:16px}
+    header{padding:12px 16px}
+    header h1{font-size:16px}
+    .bots-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ AUTH SCREEN ============ -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <h1>🤖 منصة استضافة البوتات</h1>
+    <p class="sub">استضف بوتات Python و PHP بسهولة</p>
+
+    <div id="auth-msg"></div>
+
+    <div id="login-form">
+      <div class="field">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="login-email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>كلمة المرور</label>
+        <input type="password" id="login-password" placeholder="••••••">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()">دخول</button>
+      <div class="auth-toggle">ليس لديك حساب؟ <a onclick="toggleAuth()">إنشاء حساب</a></div>
+    </div>
+
+    <div id="register-form" class="hidden">
+      <div class="field">
+        <label>البريد الإلكتروني</label>
+        <input type="email" id="reg-email" placeholder="you@example.com">
+      </div>
+      <div class="field">
+        <label>كلمة المرور (6 أحرف على الأقل)</label>
+        <input type="password" id="reg-password" placeholder="••••••">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doRegister()">إنشاء الحساب</button>
+      <div class="auth-toggle">لديك حساب؟ <a onclick="toggleAuth()">تسجيل الدخول</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <header>
+    <h1>🤖 منصة الاستضافة</h1>
+    <div class="user">
+      <span id="user-email"></span>
+      <button class="btn btn-ghost" onclick="logout()">خروج</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="topbar">
+      <h2>بوتاتي</h2>
+      <div style="display:flex;gap:12px;align-items:center">
+        <div class="stat-bar">
+          <span>الكل: <b id="stat-total">0</b></span>
+          <span>يعمل: <b id="stat-running">0</b></span>
+        </div>
+        <button class="btn btn-primary" onclick="openUpload()">+ بوت جديد</button>
+      </div>
+    </div>
+
+    <div class="bots-grid" id="bots-grid"></div>
+  </main>
+</div>
+
+<!-- ============ MODAL: UPLOAD ============ -->
+<div class="modal-bg" id="upload-modal">
+  <div class="modal">
+    <h3>📤 رفع بوت جديد</h3>
+    <div class="field">
+      <label>اسم البوت</label>
+      <input type="text" id="up-name" placeholder="My Bot">
+    </div>
+    <div class="field">
+      <label>الملف (ZIP / PY / PHP) — حتى 50 MB</label>
+      <div class="file-drop" id="up-drop" onclick="document.getElementById('up-file').click()">
+        <div id="up-drop-text">اضغط لاختيار ملف أو اسحب الملف هنا</div>
+        <input type="file" id="up-file" accept=".zip,.py,.php" onchange="onFilePicked()">
+      </div>
+      <div id="up-files-hint" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+    </div>
+    <div id="up-msg"></div>
+    <div class="row">
+      <button class="btn btn-ghost" onclick="closeUpload()">إلغاء</button>
+      <button class="btn btn-primary" id="up-submit" onclick="submitUpload()">رفع</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: LOGS ============ -->
+<div class="modal-bg" id="logs-modal">
+  <div class="modal" style="max-width:800px">
+    <h3 id="logs-title">📋 السجل</h3>
+    <div class="logs-box" id="logs-box"></div>
+    <div class="row">
+      <button class="btn btn-ghost" onclick="closeLogs()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: CONFIRM ============ -->
+<div class="modal-bg" id="confirm-modal">
+  <div class="modal" style="max-width:400px">
+    <h3 id="confirm-title">تأكيد</h3>
+    <p id="confirm-text" style="color:var(--muted);font-size:14px;margin-bottom:16px"></p>
+    <div class="row">
+      <button class="btn btn-ghost" onclick="closeConfirm()">إلغاء</button>
+      <button class="btn btn-danger" id="confirm-yes">نعم</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('token') || '';
+let currentUser = null;
+let bots = [];
+let currentBotId = null;
+let logSource = null;
+
+function $(id){ return document.getElementById(id); }
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function showAuthMsg(text, ok){
+  const el = $('auth-msg');
+  el.innerHTML = text ? `<div class="msg ${ok ? 'msg-ok' : 'msg-err'}">${escapeHtml(text)}</div>` : '';
+}
+
+function toggleAuth(){
+  $('login-form').classList.toggle('hidden');
+  $('register-form').classList.toggle('hidden');
+  showAuthMsg('');
+}
+
+async function api(path, opts = {}){
+  const headers = opts.headers || {};
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  if (!(opts.body instanceof FormData) && opts.body && !headers['Content-Type']){
+    headers['Content-Type'] = 'application/json';
+  }
+  const r = await fetch(API + path, { ...opts, headers });
+  let data = null;
+  try { data = await r.json(); } catch {}
+  if (!r.ok){
+    throw new Error((data && (data.detail || data.error)) || ('HTTP ' + r.status));
+  }
+  return data;
+}
+
+async function doLogin(){
+  const email = $('login-email').value.trim();
+  const password = $('login-password').value;
+  if (!email || !password) return showAuthMsg('املأ كل الحقول');
+  try {
+    const d = await api('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    token = d.token;
+    localStorage.setItem('token', token);
+    currentUser = d.user;
+    enterApp();
+  } catch(e){ showAuthMsg(e.message); }
+}
+
+async function doRegister(){
+  const email = $('reg-email').value.trim();
+  const password = $('reg-password').value;
+  if (!email || !password) return showAuthMsg('املأ كل الحقول');
+  if (password.length < 6) return showAuthMsg('كلمة المرور 6 أحرف على الأقل');
+  try {
+    const d = await api('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+    token = d.token;
+    localStorage.setItem('token', token);
+    currentUser = d.user;
+    enterApp();
+  } catch(e){ showAuthMsg(e.message); }
+}
+
+function logout(){
+  token = '';
+  currentUser = null;
+  localStorage.removeItem('token');
+  if (logSource) { logSource.close(); logSource = null; }
+  $('app').style.display = 'none';
+  $('auth-screen').style.display = 'flex';
+  showAuthMsg('');
+}
+
+async function enterApp(){
+  $('auth-screen').style.display = 'none';
+  $('app').style.display = 'block';
+  $('user-email').textContent = currentUser.email;
+  await loadBots();
+  setInterval(loadBots, 5000);
+}
+
+async function loadBots(){
+  try {
+    const d = await api('/api/bots');
+    bots = d.bots || [];
+    renderBots();
+  } catch(e){
+    if (e.message.includes('401') || e.message.includes('token')){
+      logout();
+    }
+  }
+}
+
+function renderBots(){
+  const grid = $('bots-grid');
+  $('stat-total').textContent = bots.length;
+  $('stat-running').textContent = bots.filter(b => b.status === 'running').length;
+
+  if (!bots.length){
+    grid.innerHTML = `<div class="empty"><h3>لا توجد بوتات</h3><p>اضغط "+ بوت جديد" للبدء</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = bots.map(b => `
+    <div class="bot-card">
+      <div class="head">
+        <div>
+          <div class="name">${escapeHtml(b.name)}</div>
+          <div class="meta">${escapeHtml(b.type)} • ${escapeHtml(b.entry_file)}</div>
+        </div>
+        <div class="status ${b.status}">${b.status === 'running' ? 'يعمل' : 'متوقف'}</div>
+      </div>
+      <div class="meta">${b.created_at ? 'أُنشئ: ' + new Date(b.created_at).toLocaleDateString('ar') : ''}</div>
+      <div class="actions">
+        ${b.status === 'running'
+          ? `<button class="btn btn-danger" onclick="stopBot('${b.id}')">إيقاف</button>`
+          : `<button class="btn btn-success" onclick="startBot('${b.id}')">تشغيل</button>`}
+        <button class="btn btn-ghost" onclick="openLogs('${b.id}', '${escapeHtml(b.name)}')">سجل</button>
+        <button class="btn btn-ghost" onclick="deleteBot('${b.id}', '${escapeHtml(b.name)}')">حذف</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function startBot(id){
+  try {
+    await api(`/api/bots/${id}/start`, { method: 'POST' });
+    await loadBots();
+  } catch(e){ alert('فشل التشغيل: ' + e.message); }
+}
+
+async function stopBot(id){
+  try {
+    await api(`/api/bots/${id}/stop`, { method: 'POST' });
+    await loadBots();
+  } catch(e){ alert('فشل الإيقاف: ' + e.message); }
+}
+
+function deleteBot(id, name){
+  $('confirm-title').textContent = 'حذف البوت';
+  $('confirm-text').textContent = `سيتم حذف "${name}" وسجلاته نهائياً. متأكد؟`;
+  $('confirm-yes').onclick = async () => {
+    try {
+      await api(`/api/bots/${id}`, { method: 'DELETE' });
+      closeConfirm();
+      await loadBots();
+    } catch(e){ alert(e.message); }
+  };
+  $('confirm-modal').classList.add('show');
+}
+
+function closeConfirm(){ $('confirm-modal').classList.remove('show'); }
+
+function openUpload(){
+  $('up-name').value = '';
+  $('up-file').value = '';
+  $('up-drop-text').textContent = 'اضغط لاختيار ملف أو اسحب الملف هنا';
+  $('up-drop').classList.remove('has-file');
+  $('up-files-hint').textContent = '';
+  $('up-msg').innerHTML = '';
+  $('upload-modal').classList.add('show');
+}
+
+function closeUpload(){ $('upload-modal').classList.remove('show'); }
+
+function onFilePicked(){
+  const f = $('up-file').files[0];
+  if (!f) return;
+  const size = (f.size / 1024 / 1024).toFixed(2) + ' MB';
+  $('up-drop').classList.add('has-file');
+  $('up-drop-text').textContent = `📎 ${f.name} (${size})`;
+  if (!$('up-name').value){
+    $('up-name').value = f.name.replace(/\.[^.]+$/, '');
+  }
+}
+
+async function submitUpload(){
+  const name = $('up-name').value.trim();
+  const f = $('up-file').files[0];
+  if (!name) return $('up-msg').innerHTML = '<div class="msg msg-err">الاسم مطلوب</div>';
+  if (!f) return $('up-msg').innerHTML = '<div class="msg msg-err">اختر ملفاً</div>';
+
+  const fd = new FormData();
+  fd.append('name', name);
+  fd.append('file', f);
+
+  $('up-submit').disabled = true;
+  $('up-submit').textContent = 'جارٍ الرفع...';
+  $('up-msg').innerHTML = '';
+
+  try {
+    await api('/api/bots', { method: 'POST', body: fd });
+    closeUpload();
+    await loadBots();
+  } catch(e){
+    $('up-msg').innerHTML = `<div class="msg msg-err">${escapeHtml(e.message)}</div>`;
+  } finally {
+    $('up-submit').disabled = false;
+    $('up-submit').textContent = 'رفع';
+  }
+}
+
+async function openLogs(id, name){
+  currentBotId = id;
+  $('logs-title').textContent = '📋 سجل: ' + name;
+  $('logs-box').innerHTML = '';
+  $('logs-modal').classList.add('show');
+
+  if (logSource){ logSource.close(); logSource = null; }
+  try {
+    const d = await api(`/api/bots/${id}/logs`);
+    (d.logs || []).forEach(l => appendLog(l));
+  } catch(e){}
+
+  const url = API + `/api/bots/${id}/stream?token=`;
+  // استخدام fetch SSE بدل EventSource لأن EventSource لا يدعم headers
+  streamLogs(id);
+}
+
+async function streamLogs(id){
+  let lastId = 0;
+  const logsBox = $('logs-box');
+  const abortController = new AbortController();
+  window._logsAbort = abortController;
+
+  try {
+    const r = await fetch(API + `/api/bots/${id}/stream`, {
+      headers: { 'Authorization': 'Bearer ' + token },
+      signal: abortController.signal
+    });
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true){
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split('\n\n');
+      buffer = parts.pop();
+      for (const part of parts){
+        const line = part.trim();
+        if (!line.startsWith('data:')) continue;
+        try {
+          const obj = JSON.parse(line.slice(5).trim());
+          appendLog(obj);
+        } catch {}
+      }
+    }
+  } catch(e){
+    if (e.name !== 'AbortError') console.error(e);
+  }
+}
+
+function appendLog(l){
+  const box = $('logs-box');
+  const div = document.createElement('div');
+  div.className = 'log-line log-' + (l.type || 'out');
+  div.textContent = `[${l.ts ? new Date(l.ts).toLocaleTimeString('ar') : ''}] ${l.line}`;
+  box.appendChild(div);
+  if (box.children.length > 500) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+}
+
+function closeLogs(){
+  if (window._logsAbort){ window._logsAbort.abort(); window._logsAbort = null; }
+  $('logs-modal').classList.remove('show');
+  currentBotId = null;
+}
+
+// on load
+(async function init(){
+  if (token){
+    try {
+      const d = await api('/api/auth/me');
+      currentUser = d.user;
+      enterApp();
+      return;
+    } catch {
+      token = '';
+      localStorage.removeItem('token');
+    }
+  }
+  $('auth-screen').style.display = 'flex';
+})();
+
+// Esc to close modals
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){
+    closeUpload(); closeLogs(); closeConfirm();
+  }
+});
+</script>
+</body>
+</html>
