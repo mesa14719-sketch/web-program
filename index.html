@@ -4,236 +4,636 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>منصة استضافة البوتات</title>
+
+<!-- CodeMirror -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/php/php.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  :root{
-    --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;
-    --border:#30363d;--text:#c9d1d9;--muted:#8b949e;
-    --accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922;
-  }
-  body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
-  button{font-family:inherit;cursor:pointer;border:none;transition:.15s}
-  input,textarea{font-family:inherit}
+:root{
+  --bg:#0b1020; --bg2:rgba(255,255,255,.04); --bg3:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.08); --border2:rgba(255,255,255,.15);
+  --text:#f1f5f9; --muted:#94a3b8; --muted2:#64748b;
+  --accent:#a855f7; --accent2:#06b6d4;
+  --success:#22c55e; --danger:#ef4444; --warn:#f59e0b;
+  --grad:linear-gradient(135deg,#a855f7,#06b6d4);
+}
+[data-theme="light"]{
+  --bg:#f8fafc; --bg2:rgba(0,0,0,.03); --bg3:rgba(0,0,0,.05);
+  --border:rgba(0,0,0,.08); --border2:rgba(0,0,0,.15);
+  --text:#0f172a; --muted:#475569; --muted2:#64748b;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;overflow-x:hidden;
+  position:relative;line-height:1.5;
+  transition:background .3s,color .3s;
+}
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(168,85,247,.35), transparent 45%),
+    radial-gradient(circle at 85% 30%, rgba(6,182,212,.30), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(34,197,94,.20), transparent 50%);
+  filter:blur(60px);animation:aurora 24s ease-in-out infinite;
+}
+[data-theme="light"] body::before{opacity:.4}
+@keyframes aurora{
+  0%,100%{transform:translate(0,0) scale(1)}
+  33%{transform:translate(5%,-3%) scale(1.1)}
+  66%{transform:translate(-5%,3%) scale(.95)}
+}
 
-  .hidden{display:none!important}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
+[data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15)}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
 
-  /* ============ AUTH ============ */
-  #auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
-  .auth-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:32px;width:100%;max-width:400px}
-  .auth-box h1{font-size:24px;margin-bottom:6px;color:var(--accent)}
-  .auth-box p.sub{color:var(--muted);font-size:13px;margin-bottom:24px}
-  .field{margin-bottom:16px}
-  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-  .field input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font-size:14px;outline:none}
-  .field input:focus{border-color:var(--accent)}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600}
-  .btn-primary{background:var(--accent);color:#0d1117}
-  .btn-primary:hover{background:#79b8ff}
-  .btn-success{background:var(--green);color:#0d1117}
-  .btn-danger{background:var(--red);color:#fff}
-  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
-  .btn-ghost:hover{background:var(--bg3)}
-  .btn-block{width:100%}
-  .btn:disabled{opacity:.5;cursor:not-allowed}
-  .auth-toggle{margin-top:16px;text-align:center;font-size:13px;color:var(--muted)}
-  .auth-toggle a{color:var(--accent);cursor:pointer;text-decoration:none}
-  .msg{padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px}
-  .msg-err{background:rgba(248,81,73,.1);color:var(--red);border:1px solid rgba(248,81,73,.3)}
-  .msg-ok{background:rgba(63,185,80,.1);color:var(--green);border:1px solid rgba(63,185,80,.3)}
+button{font-family:inherit;cursor:pointer;border:none;transition:.15s}
+input,textarea,select{font-family:inherit}
 
-  /* ============ APP ============ */
-  #app{display:none;min-height:100vh}
-  header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10}
-  header h1{font-size:18px;color:var(--accent)}
-  header .user{display:flex;align-items:center;gap:12px;font-size:13px}
-  header .user span{color:var(--muted)}
-  main{max-width:1200px;margin:0 auto;padding:24px}
-  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
-  .topbar h2{font-size:20px}
-  .stat-bar{display:flex;gap:16px;font-size:13px;color:var(--muted)}
-  .stat-bar b{color:var(--text)}
+.hidden{display:none!important}
 
-  .bots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-  .bot-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;transition:.15s}
-  .bot-card:hover{border-color:var(--accent)}
-  .bot-card .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-  .bot-card .name{font-size:15px;font-weight:600;margin-bottom:4px;word-break:break-word}
-  .bot-card .meta{font-size:11px;color:var(--muted)}
-  .bot-card .status{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:600}
-  .status.running{background:rgba(63,185,80,.15);color:var(--green)}
-  .status.stopped{background:rgba(248,81,73,.15);color:var(--red)}
-  .bot-card .actions{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
-  .bot-card .actions button{flex:1;min-width:60px;padding:6px 10px;font-size:12px;border-radius:6px}
+/* ══════════ AUTH ══════════ */
+#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;position:relative;z-index:1}
+.auth-box{
+  background:var(--bg2);backdrop-filter:blur(24px);
+  border:1px solid var(--border);border-radius:24px;
+  padding:36px 32px;width:100%;max-width:440px;
+  box-shadow:0 20px 60px rgba(0,0,0,.4);
+  animation:fadeUp .5s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.auth-logo{
+  text-align:center;font-size:42px;margin-bottom:8px;
+  background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.auth-box h1{font-size:22px;text-align:center;margin-bottom:6px}
+.auth-box .sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:26px}
 
-  .empty{text-align:center;padding:60px 20px;color:var(--muted);background:var(--bg2);border:1px dashed var(--border);border-radius:10px;grid-column:1/-1}
-  .empty h3{color:var(--text);margin-bottom:6px;font-size:16px}
+/* Tabs */
+.auth-tabs{display:flex;gap:8px;background:var(--bg3);padding:4px;border-radius:12px;margin-bottom:22px}
+.auth-tab{flex:1;padding:10px;border-radius:9px;background:transparent;color:var(--muted);font-size:13px;font-weight:600}
+.auth-tab.active{background:var(--grad);color:white;box-shadow:0 4px 16px rgba(168,85,247,.35)}
 
-  /* ============ MODAL ============ */
-  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
-  .modal-bg.show{display:flex}
-  .modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow:auto}
-  .modal h3{font-size:18px;margin-bottom:20px;color:var(--accent)}
-  .modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
-  .modal .row button{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600}
-  .file-drop{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;transition:.15s}
-  .file-drop:hover{border-color:var(--accent);color:var(--text)}
-  .file-drop.has-file{border-color:var(--green);color:var(--green)}
-  .file-drop input{display:none}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600}
+.field input{
+  width:100%;background:var(--bg3);border:1px solid var(--border);
+  color:var(--text);padding:12px 14px;border-radius:12px;
+  font-size:14px;outline:none;transition:.15s;
+}
+.field input:focus{
+  border-color:rgba(168,85,247,.5);
+  box-shadow:0 0 0 3px rgba(168,85,247,.12);
+}
+.field input.err{border-color:rgba(239,68,68,.6)}
+.field .hint{font-size:11px;color:var(--muted2);margin-top:6px}
+.field .error-msg{font-size:11px;color:var(--danger);margin-top:6px;display:none}
+.field .error-msg.show{display:block}
 
-  /* ============ LOGS ============ */
-  .logs-box{background:#0a0e14;border:1px solid var(--border);border-radius:10px;padding:14px;height:400px;overflow-y:auto;font-family:'Consolas','Monaco',monospace;font-size:12px;line-height:1.55;direction:ltr;text-align:left}
-  .log-line{white-space:pre-wrap;word-break:break-all;margin-bottom:1px}
-  .log-out{color:#c9d1d9}
-  .log-err{color:#f85149}
-  .log-sys{color:#58a6ff}
+.check-row{
+  display:flex;align-items:flex-start;gap:10px;
+  margin-bottom:12px;padding:12px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:12px;cursor:pointer;transition:.15s;
+}
+.check-row:hover{background:var(--bg2);border-color:var(--border2)}
+.check-row.checked{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.06)}
+.check-row input[type=checkbox]{
+  appearance:none;width:20px;height:20px;min-width:20px;
+  border:2px solid rgba(255,255,255,.2);border-radius:6px;
+  cursor:pointer;position:relative;transition:.15s;
+}
+.check-row input:checked{background:var(--grad);border-color:transparent}
+.check-row input:checked::after{
+  content:'✓';position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  color:white;font-size:13px;font-weight:900;
+}
+.check-row .text{font-size:13px;line-height:1.5}
+.check-row .text a{color:var(--accent);text-decoration:underline;cursor:pointer}
 
-  ::-webkit-scrollbar{width:8px;height:8px}
-  ::-webkit-scrollbar-track{background:var(--bg)}
-  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
-  ::-webkit-scrollbar-thumb:hover{background:#484f58}
+.terms-box{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:12px;padding:16px;max-height:180px;overflow-y:auto;
+  font-size:12px;line-height:1.7;color:var(--muted);
+  margin-bottom:16px;
+}
+.terms-box h4{color:var(--accent);font-size:13px;margin:8px 0 4px}
+.terms-box h4:first-child{margin-top:0}
 
-  @media(max-width:600px){
-    main{padding:16px}
-    header{padding:12px 16px}
-    header h1{font-size:16px}
-    .bots-grid{grid-template-columns:1fr}
-  }
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;
+  transition:.2s;
+}
+.btn-block{width:100%}
+.btn-primary{background:var(--grad);color:white;box-shadow:0 6px 20px rgba(168,85,247,.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(168,85,247,.5)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:var(--bg3);border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{background:var(--bg2);border-color:var(--border2)}
+.btn-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
+.btn-danger:hover{background:rgba(239,68,68,.25)}
+.btn-success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac}
+.btn-success:hover{background:rgba(34,197,94,.25)}
+.btn-sm{padding:7px 14px;font-size:12px;border-radius:9px}
+.btn-icon{padding:8px;width:36px;height:36px;justify-content:center}
+
+.switch-link{text-align:center;font-size:13px;color:var(--muted);margin-top:18px}
+.switch-link a{color:var(--accent);cursor:pointer;font-weight:600;text-decoration:none}
+.switch-link a:hover{text-decoration:underline}
+
+/* ══════════ APP ══════════ */
+#app{display:none;min-height:100vh;position:relative;z-index:1}
+header{
+  background:var(--bg2);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  padding:14px 24px;display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:0;z-index:10;
+}
+header .brand{
+  font-size:18px;font-weight:800;
+  background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+header .right{display:flex;align-items:center;gap:10px;font-size:13px}
+header .user-badge{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 12px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:20px;font-size:12px;color:var(--muted);
+}
+header .user-badge .avatar{
+  width:24px;height:24px;border-radius:50%;background:var(--grad);
+  display:flex;align-items:center;justify-content:center;
+  color:white;font-weight:700;font-size:11px;
+}
+
+main{max-width:1300px;margin:0 auto;padding:24px}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+.topbar h2{font-size:24px;font-weight:700}
+.topbar .stats{display:flex;gap:18px;font-size:13px;color:var(--muted)}
+.topbar .stats b{color:var(--text);font-weight:700}
+
+.bots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+
+.bot-card{
+  background:var(--bg2);backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:20px;
+  padding:20px;position:relative;overflow:hidden;
+  transition:.25s;animation:fadeUp .35s ease;
+}
+.bot-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(168,85,247,.5),transparent);
+}
+.bot-card:hover{
+  transform:translateY(-3px);
+  border-color:rgba(168,85,247,.3);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+.bot-card .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:10px}
+.bot-card .name{font-size:16px;font-weight:700;margin-bottom:4px;word-break:break-word}
+.bot-card .meta{font-size:11px;color:var(--muted2);font-family:monospace;word-break:break-all}
+
+.status-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;padding:4px 10px;border-radius:20px;
+  font-weight:700;white-space:nowrap;
+}
+.status-pill::before{
+  content:'';width:6px;height:6px;border-radius:50%;background:currentColor;
+  box-shadow:0 0 8px currentColor;
+}
+.status-pill.running{background:rgba(34,197,94,.15);color:var(--success)}
+.status-pill.stopped{background:rgba(239,68,68,.15);color:var(--danger)}
+
+.bot-card .actions{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
+.bot-card .actions button{
+  flex:1;min-width:60px;padding:8px 10px;font-size:12px;border-radius:9px;font-weight:600;
+}
+
+.empty-state{
+  text-align:center;padding:80px 20px;color:var(--muted);
+  background:var(--bg2);border:1px dashed var(--border);border-radius:20px;
+  grid-column:1/-1;
+}
+.empty-state .icon{font-size:56px;margin-bottom:14px;opacity:.5}
+.empty-state h3{color:var(--text);margin-bottom:8px;font-size:18px}
+
+/* ══════════ MODALS ══════════ */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
+  animation:fadeIn .2s;
+}
+.modal-bg.show{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+.modal{
+  background:var(--bg);border:1px solid var(--border);
+  border-radius:20px;padding:24px;width:100%;max-width:520px;
+  max-height:90vh;overflow-y:auto;
+  animation:pop .25s ease;
+}
+.modal.wide{max-width:900px}
+.modal.tall{max-height:92vh}
+@keyframes pop{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-head h3{font-size:18px;font-weight:700}
+.modal-head .close{
+  width:32px;height:32px;border-radius:8px;background:var(--bg3);
+  color:var(--muted);font-size:18px;line-height:1;
+}
+.modal-head .close:hover{background:var(--border);color:var(--text)}
+
+.modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+
+/* Tabs for upload */
+.upload-tabs{display:flex;gap:6px;background:var(--bg3);padding:4px;border-radius:12px;margin-bottom:20px}
+.upload-tab{flex:1;padding:10px;border-radius:9px;background:transparent;color:var(--muted);font-size:13px;font-weight:600}
+.upload-tab.active{background:var(--grad);color:white}
+
+/* File drop */
+.drop-zone{
+  border:2px dashed var(--border2);border-radius:14px;
+  padding:22px;text-align:center;color:var(--muted);font-size:13px;
+  cursor:pointer;transition:.2s;background:var(--bg3);
+}
+.drop-zone:hover{border-color:var(--accent);color:var(--text);background:var(--bg2)}
+.drop-zone.has-file{border-color:var(--success);color:var(--success);background:rgba(34,197,94,.05)}
+.drop-zone .icon{font-size:28px;margin-bottom:6px;display:block}
+.drop-zone input{display:none}
+
+.file-badge{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;margin-bottom:8px;font-size:13px;
+  animation:fadeUp .2s;
+}
+.file-badge .name{display:flex;align-items:center;gap:8px;word-break:break-all}
+.file-badge .del{background:transparent;color:var(--danger);padding:4px;font-size:14px}
+
+/* Logs */
+.logs-box{
+  background:#050810;border:1px solid var(--border);border-radius:12px;
+  padding:14px;height:420px;overflow-y:auto;
+  font-family:'Consolas','Monaco',monospace;font-size:12px;line-height:1.55;
+  direction:ltr;text-align:left;
+}
+.log-line{white-space:pre-wrap;word-break:break-all;margin-bottom:1px}
+.log-out{color:#e2e8f0}
+.log-err{color:#f85149}
+.log-sys{color:#58a6ff}
+
+/* Editor */
+.editor-layout{display:grid;grid-template-columns:240px 1fr;gap:14px;height:calc(90vh - 160px);min-height:400px}
+.file-tree{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:12px;overflow-y:auto;padding:10px;
+}
+.file-item{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 8px;border-radius:6px;font-size:12px;
+  cursor:pointer;color:var(--muted);font-family:monospace;
+  word-break:break-all;
+}
+.file-item:hover{background:var(--bg2);color:var(--text)}
+.file-item.active{background:var(--bg2);color:var(--accent);font-weight:600}
+.file-item.dir{color:var(--accent2);cursor:default;font-weight:600}
+.file-item .icon{font-size:12px;min-width:14px}
+
+.editor-panel{display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.editor-toolbar{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:8px 12px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;font-size:12px;flex-wrap:wrap;
+}
+.editor-toolbar .path{color:var(--accent2);font-family:monospace;font-weight:600}
+.CodeMirror{
+  height:100%!important;border-radius:12px;border:1px solid var(--border);
+  font-family:'Consolas','Monaco',monospace!important;font-size:13px;
+}
+
+/* Toast */
+.toast{
+  position:fixed;top:22px;left:50%;transform:translate(-50%,-100px);
+  background:var(--bg2);backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  padding:12px 20px;border-radius:12px;font-size:13px;
+  opacity:0;transition:.35s;pointer-events:none;z-index:1000;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:90vw;
+}
+.toast.show{opacity:1;transform:translate(-50%,0);top:22px}
+.toast.err{border-color:rgba(239,68,68,.4);color:#fca5a5}
+.toast.ok{border-color:rgba(34,197,94,.4);color:#86efac}
+
+/* Loading skeleton */
+.skeleton{
+  background:linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%);
+  background-size:200% 100%;animation:shimmer 1.5s infinite;
+  border-radius:12px;height:120px;
+}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Confirm */
+.confirm-box{max-width:400px}
+.confirm-box p{color:var(--muted);font-size:14px;margin-bottom:20px}
+
+/* Loader dot */
+.loader{
+  display:inline-block;width:14px;height:14px;
+  border:2px solid rgba(255,255,255,.2);border-top-color:white;
+  border-radius:50%;animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Mobile */
+@media(max-width:768px){
+  main{padding:16px}
+  header{padding:12px 16px}
+  header .brand{font-size:16px}
+  header .user-badge span.email{display:none}
+  .bots-grid{grid-template-columns:1fr}
+  .editor-layout{grid-template-columns:1fr;height:auto}
+  .file-tree{max-height:200px}
+  .CodeMirror{height:400px!important}
+  .modal{padding:20px}
+}
 </style>
 </head>
 <body>
 
-<!-- ============ AUTH SCREEN ============ -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════ AUTH SCREEN ═══════════════ -->
 <div id="auth-screen">
   <div class="auth-box">
-    <h1>🤖 منصة استضافة البوتات</h1>
+    <div class="auth-logo">🤖</div>
+    <h1>منصة استضافة البوتات</h1>
     <p class="sub">استضف بوتات Python و PHP بسهولة</p>
 
-    <div id="auth-msg"></div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">تسجيل دخول</button>
+      <button class="auth-tab" id="tab-register" onclick="switchTab('register')">حساب جديد</button>
+    </div>
 
-    <div id="login-form">
+    <!-- LOGIN -->
+    <div id="form-login">
       <div class="field">
         <label>البريد الإلكتروني</label>
-        <input type="email" id="login-email" placeholder="you@example.com">
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="field">
         <label>كلمة المرور</label>
-        <input type="password" id="login-password" placeholder="••••••">
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
       </div>
       <button class="btn btn-primary btn-block" onclick="doLogin()">دخول</button>
-      <div class="auth-toggle">ليس لديك حساب؟ <a onclick="toggleAuth()">إنشاء حساب</a></div>
     </div>
 
-    <div id="register-form" class="hidden">
+    <!-- REGISTER -->
+    <div id="form-register" class="hidden">
       <div class="field">
         <label>البريد الإلكتروني</label>
         <input type="email" id="reg-email" placeholder="you@example.com">
+        <div class="error-msg" id="reg-email-err"></div>
       </div>
       <div class="field">
-        <label>كلمة المرور (6 أحرف على الأقل)</label>
-        <input type="password" id="reg-password" placeholder="••••••">
+        <label>كلمة المرور</label>
+        <input type="password" id="reg-password" placeholder="8 أحرف على الأقل">
+        <div class="hint">8 أحرف، حرف + رقم على الأقل</div>
+        <div class="error-msg" id="reg-password-err"></div>
       </div>
-      <button class="btn btn-primary btn-block" onclick="doRegister()">إنشاء الحساب</button>
-      <div class="auth-toggle">لديك حساب؟ <a onclick="toggleAuth()">تسجيل الدخول</a></div>
+      <div class="field">
+        <label>تأكيد كلمة المرور</label>
+        <input type="password" id="reg-password2" placeholder="أعد الإدخال">
+        <div class="error-msg" id="reg-password2-err"></div>
+      </div>
+
+      <div class="terms-box">
+        <h4>📜 الشروط والأحكام</h4>
+        باستخدامك للمنصة، أنت توافق على الالتزام بالقوانين المحلية والدولية. لا يُسمح باستخدام المنصة لأي نشاط غير قانوني أو لنشر محتوى ضار. تحتفظ المنصة بحق إيقاف أي حساب مخالف دون إشعار مسبق.
+        <h4>🔒 سياسة الخصوصية</h4>
+        نجمع البريد الإلكتروني وكلمة المرور المشفرة والملفات التي ترفعها وسجلات تشغيلها. تُستخدم هذه البيانات فقط لتشغيل حسابك وعرض لوحة التحكم. لا نشارك بياناتك مع أي طرف ثالث. يمكنك حذف حسابك وكل بياناتك في أي وقت.
+        <h4>⚠️ المسؤولية</h4>
+        أنت المسؤول الكامل عن محتوى البوتات التي ترفعها.
+      </div>
+
+      <label class="check-row" id="chk-terms-row">
+        <input type="checkbox" id="chk-terms" onchange="updateRegBtn()">
+        <span class="text">أوافق على الشروط والأحكام وسياسة الخصوصية</span>
+      </label>
+
+      <button class="btn btn-primary btn-block" id="reg-btn" onclick="doRegister()" disabled>إنشاء الحساب</button>
     </div>
   </div>
 </div>
 
-<!-- ============ APP ============ -->
+<!-- ═══════════════ APP ═══════════════ -->
 <div id="app">
   <header>
-    <h1>🤖 منصة الاستضافة</h1>
-    <div class="user">
-      <span id="user-email"></span>
-      <button class="btn btn-ghost" onclick="logout()">خروج</button>
+    <div class="brand">🤖 منصة الاستضافة</div>
+    <div class="right">
+      <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" title="الوضع الليلي/النهاري" id="theme-btn">🌙</button>
+      <div class="user-badge">
+        <div class="avatar" id="user-avatar">?</div>
+        <span class="email" id="user-email"></span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">خروج</button>
     </div>
   </header>
 
   <main>
     <div class="topbar">
       <h2>بوتاتي</h2>
-      <div style="display:flex;gap:12px;align-items:center">
-        <div class="stat-bar">
-          <span>الكل: <b id="stat-total">0</b></span>
-          <span>يعمل: <b id="stat-running">0</b></span>
-        </div>
-        <button class="btn btn-primary" onclick="openUpload()">+ بوت جديد</button>
+      <div class="stats">
+        <span>الكل: <b id="stat-total">0</b></span>
+        <span>يعمل: <b id="stat-running">0</b></span>
+        <span>متوقف: <b id="stat-stopped">0</b></span>
       </div>
+      <button class="btn btn-primary" onclick="openUpload()">+ بوت جديد</button>
     </div>
 
     <div class="bots-grid" id="bots-grid"></div>
   </main>
 </div>
 
-<!-- ============ MODAL: UPLOAD ============ -->
+<!-- ═══════════════ MODAL: UPLOAD ═══════════════ -->
 <div class="modal-bg" id="upload-modal">
   <div class="modal">
-    <h3>📤 رفع بوت جديد</h3>
-    <div class="field">
-      <label>اسم البوت</label>
-      <input type="text" id="up-name" placeholder="My Bot">
+    <div class="modal-head">
+      <h3>📤 إضافة بوت جديد</h3>
+      <button class="close" onclick="closeModal('upload-modal')">✕</button>
     </div>
-    <div class="field">
-      <label>الملف (ZIP / PY / PHP) — حتى 50 MB</label>
-      <div class="file-drop" id="up-drop" onclick="document.getElementById('up-file').click()">
-        <div id="up-drop-text">اضغط لاختيار ملف أو اسحب الملف هنا</div>
-        <input type="file" id="up-file" accept=".zip,.py,.php" onchange="onFilePicked()">
+
+    <div class="upload-tabs">
+      <button class="upload-tab active" id="utab-files" onclick="switchUploadTab('files')">📁 ملفات</button>
+      <button class="upload-tab" id="utab-github" onclick="switchUploadTab('github')">🐙 GitHub</button>
+    </div>
+
+    <!-- FILES -->
+    <div id="upload-files-panel">
+      <div class="field">
+        <label>اسم البوت</label>
+        <input type="text" id="up-name" placeholder="My Bot" maxlength="60">
       </div>
-      <div id="up-files-hint" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+
+      <div class="field">
+        <label>📄 ملف البوت الرئيسي (إلزامي) — .py / .php / .zip</label>
+        <label class="drop-zone" id="drop-main" for="f-main">
+          <span class="icon">📎</span>
+          <span id="drop-main-text">اسحب الملف أو اضغط للاختيار</span>
+          <input type="file" id="f-main" accept=".py,.php,.zip" onchange="onFilePicked('main')">
+        </label>
+      </div>
+
+      <div class="field">
+        <label>📦 ملف المكتبات (اختياري) — requirements.txt</label>
+        <label class="drop-zone" id="drop-req" for="f-req">
+          <span class="icon">📦</span>
+          <span id="drop-req-text">اسحب الملف أو اضغط للاختيار</span>
+          <input type="file" id="f-req" accept=".txt" onchange="onFilePicked('req')">
+        </label>
+      </div>
+
+      <div class="field">
+        <label>📎 ملفات إضافية (اختياري) — متعددة</label>
+        <label class="drop-zone" id="drop-extra" for="f-extra">
+          <span class="icon">📁</span>
+          <span id="drop-extra-text">اسحب الملفات أو اضغط للاختيار</span>
+          <input type="file" id="f-extra" multiple onchange="onFilesPicked('extra')">
+        </label>
+        <div id="extras-list"></div>
+      </div>
+
+      <div class="row">
+        <button class="btn btn-ghost" onclick="closeModal('upload-modal')">إلغاء</button>
+        <button class="btn btn-primary" id="upload-files-btn" onclick="submitUploadFiles()">رفع البوت</button>
+      </div>
     </div>
-    <div id="up-msg"></div>
-    <div class="row">
-      <button class="btn btn-ghost" onclick="closeUpload()">إلغاء</button>
-      <button class="btn btn-primary" id="up-submit" onclick="submitUpload()">رفع</button>
+
+    <!-- GITHUB -->
+    <div id="upload-github-panel" class="hidden">
+      <div class="field">
+        <label>اسم البوت</label>
+        <input type="text" id="gh-name" placeholder="My Bot" maxlength="60">
+      </div>
+      <div class="field">
+        <label>🔗 رابط المستودع</label>
+        <input type="text" id="gh-url" placeholder="https://github.com/username/repo">
+        <div class="hint">يجب أن يكون المستودع عاماً ويحتوي على bot.py أو main.py و requirements.txt</div>
+      </div>
+      <div class="field">
+        <label>🌿 الفرع</label>
+        <input type="text" id="gh-branch" placeholder="main" value="main">
+      </div>
+      <div class="row">
+        <button class="btn btn-ghost" onclick="closeModal('upload-modal')">إلغاء</button>
+        <button class="btn btn-primary" id="upload-gh-btn" onclick="submitImportGithub()">استيراد</button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ============ MODAL: LOGS ============ -->
+<!-- ═══════════════ MODAL: LOGS ═══════════════ -->
 <div class="modal-bg" id="logs-modal">
-  <div class="modal" style="max-width:800px">
-    <h3 id="logs-title">📋 السجل</h3>
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3 id="logs-title">📋 السجل</h3>
+      <button class="close" onclick="closeLogs()">✕</button>
+    </div>
     <div class="logs-box" id="logs-box"></div>
     <div class="row">
+      <button class="btn btn-ghost btn-sm" onclick="clearLogsView()">مسح العرض</button>
       <button class="btn btn-ghost" onclick="closeLogs()">إغلاق</button>
     </div>
   </div>
 </div>
 
-<!-- ============ MODAL: CONFIRM ============ -->
+<!-- ═══════════════ MODAL: EDITOR ═══════════════ -->
+<div class="modal-bg" id="editor-modal">
+  <div class="modal wide tall">
+    <div class="modal-head">
+      <h3 id="editor-title">📝 محرر الملفات</h3>
+      <button class="close" onclick="closeEditor()">✕</button>
+    </div>
+
+    <div class="editor-layout">
+      <div class="file-tree" id="file-tree"></div>
+      <div class="editor-panel">
+        <div class="editor-toolbar">
+          <span class="path" id="editor-path">اختر ملفاً</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" onclick="newFile()">+ ملف</button>
+            <button class="btn btn-ghost btn-sm" id="save-btn" onclick="saveFile()" disabled>💾 حفظ</button>
+            <button class="btn btn-danger btn-sm" id="del-btn" onclick="deleteCurrentFile()" disabled>🗑 حذف</button>
+            <button class="btn btn-success btn-sm" onclick="restartBotFromEditor()">🔄 إعادة تشغيل</button>
+          </div>
+        </div>
+        <textarea id="code-area"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: CONFIRM ═══════════════ -->
 <div class="modal-bg" id="confirm-modal">
-  <div class="modal" style="max-width:400px">
-    <h3 id="confirm-title">تأكيد</h3>
-    <p id="confirm-text" style="color:var(--muted);font-size:14px;margin-bottom:16px"></p>
+  <div class="modal confirm-box">
+    <div class="modal-head">
+      <h3 id="confirm-title">تأكيد</h3>
+      <button class="close" onclick="closeModal('confirm-modal')">✕</button>
+    </div>
+    <p id="confirm-text"></p>
     <div class="row">
-      <button class="btn btn-ghost" onclick="closeConfirm()">إلغاء</button>
-      <button class="btn btn-danger" id="confirm-yes">نعم</button>
+      <button class="btn btn-ghost" onclick="closeModal('confirm-modal')">إلغاء</button>
+      <button class="btn btn-danger" id="confirm-yes">تأكيد</button>
     </div>
   </div>
 </div>
 
 <script>
+// ═══════════════ STATE ═══════════════
 const API = '';
 let token = localStorage.getItem('token') || '';
 let currentUser = null;
 let bots = [];
 let currentBotId = null;
-let logSource = null;
+let currentLogsAbort = null;
+let editor = null;
+let currentFilePath = null;
+let uploadState = { main: null, req: null, extras: [] };
 
-function $(id){ return document.getElementById(id); }
+// ═══════════════ HELPERS ═══════════════
+const $ = id => document.getElementById(id);
 
 function escapeHtml(s){
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
 }
 
-function showAuthMsg(text, ok){
-  const el = $('auth-msg');
-  el.innerHTML = text ? `<div class="msg ${ok ? 'msg-ok' : 'msg-err'}">${escapeHtml(text)}</div>` : '';
-}
-
-function toggleAuth(){
-  $('login-form').classList.toggle('hidden');
-  $('register-form').classList.toggle('hidden');
-  showAuthMsg('');
+function toast(msg, type = ''){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
 async function api(path, opts = {}){
@@ -246,15 +646,49 @@ async function api(path, opts = {}){
   let data = null;
   try { data = await r.json(); } catch {}
   if (!r.ok){
-    throw new Error((data && (data.detail || data.error)) || ('HTTP ' + r.status));
+    const msg = (data && (data.detail || data.error)) || ('HTTP ' + r.status);
+    throw new Error(msg);
   }
   return data;
+}
+
+function openModal(id){ $(id).classList.add('show'); }
+function closeModal(id){ $(id).classList.remove('show'); }
+
+// ═══════════════ THEME ═══════════════
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('theme', t);
+  $('theme-btn').textContent = t === 'light' ? '☀️' : '🌙';
+}
+function toggleTheme(){
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(cur === 'light' ? 'dark' : 'light');
+}
+applyTheme(localStorage.getItem('theme') || 'dark');
+
+// ═══════════════ AUTH ═══════════════
+function switchTab(which){
+  $('tab-login').classList.toggle('active', which === 'login');
+  $('tab-register').classList.toggle('active', which === 'register');
+  $('form-login').classList.toggle('hidden', which !== 'login');
+  $('form-register').classList.toggle('hidden', which !== 'register');
+}
+
+function updateRegBtn(){
+  const checked = $('chk-terms').checked;
+  $('reg-btn').disabled = !checked;
+  $('chk-terms-row').classList.toggle('checked', checked);
 }
 
 async function doLogin(){
   const email = $('login-email').value.trim();
   const password = $('login-password').value;
-  if (!email || !password) return showAuthMsg('املأ كل الحقول');
+  if (!email || !password) return toast('املأ كل الحقول', 'err');
+  const btn = event.target;
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span>';
   try {
     const d = await api('/api/auth/login', {
       method: 'POST',
@@ -264,51 +698,102 @@ async function doLogin(){
     localStorage.setItem('token', token);
     currentUser = d.user;
     enterApp();
-  } catch(e){ showAuthMsg(e.message); }
+  } catch(e){
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+function showRegErr(field, msg){
+  const el = $(field + '-err');
+  const inp = $(field.replace('-err',''));
+  if (msg){ el.textContent = msg; el.classList.add('show'); inp && inp.classList.add('err'); }
+  else { el.classList.remove('show'); inp && inp.classList.remove('err'); }
 }
 
 async function doRegister(){
-  const email = $('reg-email').value.trim();
-  const password = $('reg-password').value;
-  if (!email || !password) return showAuthMsg('املأ كل الحقول');
-  if (password.length < 6) return showAuthMsg('كلمة المرور 6 أحرف على الأقل');
+  ['reg-email','reg-password','reg-password2'].forEach(f => showRegErr(f, ''));
+
+  const email = $('reg-email').value.trim().toLowerCase();
+  const p1 = $('reg-password').value;
+  const p2 = $('reg-password2').value;
+
+  let err = false;
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+    showRegErr('reg-email', 'بريد غير صالح'); err = true;
+  }
+  if (p1.length < 8){ showRegErr('reg-password', 'كلمة المرور 8 أحرف على الأقل'); err = true; }
+  else if (!/[A-Za-z]/.test(p1) || !/\d/.test(p1)){
+    showRegErr('reg-password', 'يجب أن تحتوي حرفاً ورقماً'); err = true;
+  }
+  if (p1 !== p2){ showRegErr('reg-password2', 'كلمتا المرور غير متطابقتين'); err = true; }
+  if (!$('chk-terms').checked){ toast('يجب الموافقة على الشروط', 'err'); err = true; }
+  if (err) return;
+
+  const btn = $('reg-btn');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span>';
   try {
     const d = await api('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email, password: p1, terms: true })
     });
     token = d.token;
     localStorage.setItem('token', token);
     currentUser = d.user;
+    toast('🎉 تم إنشاء الحساب', 'ok');
     enterApp();
-  } catch(e){ showAuthMsg(e.message); }
+  } catch(e){
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
 }
 
 function logout(){
   token = '';
   currentUser = null;
   localStorage.removeItem('token');
-  if (logSource) { logSource.close(); logSource = null; }
+  if (currentLogsAbort){ currentLogsAbort.abort(); currentLogsAbort = null; }
   $('app').style.display = 'none';
   $('auth-screen').style.display = 'flex';
-  showAuthMsg('');
+  closeModal('logs-modal'); closeModal('editor-modal'); closeModal('upload-modal');
 }
 
 async function enterApp(){
   $('auth-screen').style.display = 'none';
   $('app').style.display = 'block';
   $('user-email').textContent = currentUser.email;
+  $('user-avatar').textContent = (currentUser.email[0] || '?').toUpperCase();
   await loadBots();
-  setInterval(loadBots, 5000);
+  setInterval(loadBots, 6000);
 }
 
+async function checkAuth(){
+  if (!token) return false;
+  try {
+    const d = await api('/api/auth/me');
+    currentUser = d.user;
+    return true;
+  } catch {
+    token = '';
+    localStorage.removeItem('token');
+    return false;
+  }
+}
+
+// ═══════════════ BOTS ═══════════════
 async function loadBots(){
   try {
     const d = await api('/api/bots');
     bots = d.bots || [];
     renderBots();
   } catch(e){
-    if (e.message.includes('401') || e.message.includes('token')){
+    if (e.message.includes('401') || e.message.toLowerCase().includes('token')){
       logout();
     }
   }
@@ -316,11 +801,19 @@ async function loadBots(){
 
 function renderBots(){
   const grid = $('bots-grid');
+  const running = bots.filter(b => b.status === 'running').length;
+  const stopped = bots.length - running;
   $('stat-total').textContent = bots.length;
-  $('stat-running').textContent = bots.filter(b => b.status === 'running').length;
+  $('stat-running').textContent = running;
+  $('stat-stopped').textContent = stopped;
 
   if (!bots.length){
-    grid.innerHTML = `<div class="empty"><h3>لا توجد بوتات</h3><p>اضغط "+ بوت جديد" للبدء</p></div>`;
+    grid.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🤖</div>
+        <h3>لا توجد بوتات</h3>
+        <p>اضغط "+ بوت جديد" للبدء</p>
+      </div>`;
     return;
   }
 
@@ -331,15 +824,19 @@ function renderBots(){
           <div class="name">${escapeHtml(b.name)}</div>
           <div class="meta">${escapeHtml(b.type)} • ${escapeHtml(b.entry_file)}</div>
         </div>
-        <div class="status ${b.status}">${b.status === 'running' ? 'يعمل' : 'متوقف'}</div>
+        <div class="status-pill ${b.status}">
+          ${b.status === 'running' ? 'يعمل' : 'متوقف'}
+        </div>
       </div>
-      <div class="meta">${b.created_at ? 'أُنشئ: ' + new Date(b.created_at).toLocaleDateString('ar') : ''}</div>
+      ${b.source === 'github' ? '<div class="meta">🐙 مستورد من GitHub</div>' : ''}
       <div class="actions">
         ${b.status === 'running'
-          ? `<button class="btn btn-danger" onclick="stopBot('${b.id}')">إيقاف</button>`
-          : `<button class="btn btn-success" onclick="startBot('${b.id}')">تشغيل</button>`}
-        <button class="btn btn-ghost" onclick="openLogs('${b.id}', '${escapeHtml(b.name)}')">سجل</button>
-        <button class="btn btn-ghost" onclick="deleteBot('${b.id}', '${escapeHtml(b.name)}')">حذف</button>
+          ? `<button class="btn btn-danger btn-sm" onclick="stopBot('${b.id}')">إيقاف</button>`
+          : `<button class="btn btn-success btn-sm" onclick="startBot('${b.id}')">تشغيل</button>`}
+        <button class="btn btn-ghost btn-sm" onclick="openLogs('${b.id}', '${escapeHtml(b.name)}')">سجل</button>
+        <button class="btn btn-ghost btn-sm" onclick="openEditor('${b.id}', '${escapeHtml(b.name)}')">محرر</button>
+        ${b.source === 'github' ? `<button class="btn btn-ghost btn-sm" onclick="updateFromGithub('${b.id}')">🔄 تحديث</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="confirmDelete('${b.id}', '${escapeHtml(b.name)}')">حذف</button>
       </div>
     </div>
   `).join('');
@@ -347,114 +844,194 @@ function renderBots(){
 
 async function startBot(id){
   try {
+    toast('جارٍ التشغيل...');
     await api(`/api/bots/${id}/start`, { method: 'POST' });
+    toast('✅ البوت يعمل', 'ok');
     await loadBots();
-  } catch(e){ alert('فشل التشغيل: ' + e.message); }
+  } catch(e){ toast('فشل: ' + e.message, 'err'); }
 }
 
 async function stopBot(id){
   try {
     await api(`/api/bots/${id}/stop`, { method: 'POST' });
+    toast('⏹ تم الإيقاف', 'ok');
     await loadBots();
-  } catch(e){ alert('فشل الإيقاف: ' + e.message); }
+  } catch(e){ toast('فشل: ' + e.message, 'err'); }
 }
 
-function deleteBot(id, name){
+function confirmDelete(id, name){
   $('confirm-title').textContent = 'حذف البوت';
-  $('confirm-text').textContent = `سيتم حذف "${name}" وسجلاته نهائياً. متأكد؟`;
+  $('confirm-text').textContent = `سيتم حذف "${name}" وكل ملفاته وسجلاته نهائياً. متأكد؟`;
   $('confirm-yes').onclick = async () => {
     try {
       await api(`/api/bots/${id}`, { method: 'DELETE' });
-      closeConfirm();
+      closeModal('confirm-modal');
+      toast('🗑 تم الحذف', 'ok');
       await loadBots();
-    } catch(e){ alert(e.message); }
+    } catch(e){ toast(e.message, 'err'); }
   };
-  $('confirm-modal').classList.add('show');
+  openModal('confirm-modal');
 }
 
-function closeConfirm(){ $('confirm-modal').classList.remove('show'); }
+async function updateFromGithub(id){
+  try {
+    toast('🔄 جارٍ التحديث من GitHub...');
+    await api(`/api/bots/${id}/update-from-github`, { method: 'POST' });
+    toast('✅ تم التحديث', 'ok');
+    await loadBots();
+  } catch(e){ toast('فشل: ' + e.message, 'err'); }
+}
 
+// ═══════════════ UPLOAD ═══════════════
 function openUpload(){
   $('up-name').value = '';
-  $('up-file').value = '';
-  $('up-drop-text').textContent = 'اضغط لاختيار ملف أو اسحب الملف هنا';
-  $('up-drop').classList.remove('has-file');
-  $('up-files-hint').textContent = '';
-  $('up-msg').innerHTML = '';
-  $('upload-modal').classList.add('show');
+  $('gh-name').value = '';
+  $('gh-url').value = '';
+  $('gh-branch').value = 'main';
+  uploadState = { main: null, req: null, extras: [] };
+  resetDrop('main'); resetDrop('req'); resetDrop('extra');
+  $('extras-list').innerHTML = '';
+  switchUploadTab('files');
+  openModal('upload-modal');
 }
 
-function closeUpload(){ $('upload-modal').classList.remove('show'); }
+function switchUploadTab(which){
+  $('utab-files').classList.toggle('active', which === 'files');
+  $('utab-github').classList.toggle('active', which === 'github');
+  $('upload-files-panel').classList.toggle('hidden', which !== 'files');
+  $('upload-github-panel').classList.toggle('hidden', which !== 'github');
+}
 
-function onFilePicked(){
-  const f = $('up-file').files[0];
+function resetDrop(which){
+  const map = {
+    main:  { zone: 'drop-main',  text: 'drop-main-text',  def: 'اسحب الملف أو اضغط للاختيار' },
+    req:   { zone: 'drop-req',   text: 'drop-req-text',   def: 'اسحب الملف أو اضغط للاختيار' },
+    extra: { zone: 'drop-extra', text: 'drop-extra-text', def: 'اسحب الملفات أو اضغط للاختيار' }
+  };
+  const m = map[which];
+  $(m.zone).classList.remove('has-file');
+  $(m.text).textContent = m.def;
+}
+
+function onFilePicked(which){
+  const input = $('f-' + which);
+  const f = input.files[0];
   if (!f) return;
-  const size = (f.size / 1024 / 1024).toFixed(2) + ' MB';
-  $('up-drop').classList.add('has-file');
-  $('up-drop-text').textContent = `📎 ${f.name} (${size})`;
-  if (!$('up-name').value){
+  if (which === 'main') uploadState.main = f;
+  if (which === 'req') uploadState.req = f;
+
+  const zone = $('drop-' + which);
+  const text = $('drop-' + which + '-text');
+  zone.classList.add('has-file');
+  text.textContent = `📎 ${f.name} (${(f.size/1024).toFixed(1)} KB)`;
+
+  if (!$('up-name').value && which === 'main'){
     $('up-name').value = f.name.replace(/\.[^.]+$/, '');
   }
 }
 
-async function submitUpload(){
+function onFilesPicked(which){
+  const input = $('f-extra');
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+  uploadState.extras = files;
+
+  $('drop-extra').classList.add('has-file');
+  $('drop-extra-text').textContent = `📎 ${files.length} ملف`;
+
+  const list = $('extras-list');
+  list.innerHTML = files.map((f, i) => `
+    <div class="file-badge">
+      <span class="name">📄 ${escapeHtml(f.name)}</span>
+      <span style="color:var(--muted2);font-size:11px">${(f.size/1024).toFixed(1)} KB</span>
+    </div>
+  `).join('');
+}
+
+async function submitUploadFiles(){
   const name = $('up-name').value.trim();
-  const f = $('up-file').files[0];
-  if (!name) return $('up-msg').innerHTML = '<div class="msg msg-err">الاسم مطلوب</div>';
-  if (!f) return $('up-msg').innerHTML = '<div class="msg msg-err">اختر ملفاً</div>';
+  if (!name) return toast('اسم البوت مطلوب', 'err');
+  if (!uploadState.main) return toast('ملف البوت الرئيسي مطلوب', 'err');
+
+  const btn = $('upload-files-btn');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> جارٍ الرفع...';
 
   const fd = new FormData();
   fd.append('name', name);
-  fd.append('file', f);
-
-  $('up-submit').disabled = true;
-  $('up-submit').textContent = 'جارٍ الرفع...';
-  $('up-msg').innerHTML = '';
+  fd.append('main_file', uploadState.main);
+  if (uploadState.req) fd.append('requirements', uploadState.req);
+  uploadState.extras.forEach(f => fd.append('extras', f));
 
   try {
-    await api('/api/bots', { method: 'POST', body: fd });
-    closeUpload();
+    await api('/api/bots/upload-files', { method: 'POST', body: fd });
+    toast('✅ تم رفع البوت', 'ok');
+    closeModal('upload-modal');
     await loadBots();
   } catch(e){
-    $('up-msg').innerHTML = `<div class="msg msg-err">${escapeHtml(e.message)}</div>`;
+    toast('فشل: ' + e.message, 'err');
   } finally {
-    $('up-submit').disabled = false;
-    $('up-submit').textContent = 'رفع';
+    btn.disabled = false;
+    btn.textContent = oldText;
   }
 }
 
+async function submitImportGithub(){
+  const name = $('gh-name').value.trim();
+  const url = $('gh-url').value.trim();
+  const branch = $('gh-branch').value.trim() || 'main';
+  if (!name) return toast('اسم البوت مطلوب', 'err');
+  if (!url) return toast('رابط المستودع مطلوب', 'err');
+
+  const btn = $('upload-gh-btn');
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> جارٍ الاستيراد...';
+
+  try {
+    await api('/api/bots/import-github', {
+      method: 'POST',
+      body: JSON.stringify({ name, url, branch })
+    });
+    toast('✅ تم الاستيراد', 'ok');
+    closeModal('upload-modal');
+    await loadBots();
+  } catch(e){
+    toast('فشل: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+// ═══════════════ LOGS ═══════════════
 async function openLogs(id, name){
   currentBotId = id;
-  $('logs-title').textContent = '📋 سجل: ' + name;
+  $('logs-title').textContent = '📋 ' + name;
   $('logs-box').innerHTML = '';
-  $('logs-modal').classList.add('show');
+  openModal('logs-modal');
 
-  if (logSource){ logSource.close(); logSource = null; }
   try {
     const d = await api(`/api/bots/${id}/logs`);
     (d.logs || []).forEach(l => appendLog(l));
   } catch(e){}
 
-  const url = API + `/api/bots/${id}/stream?token=`;
-  // استخدام fetch SSE بدل EventSource لأن EventSource لا يدعم headers
-  streamLogs(id);
+  // stream
+  if (currentLogsAbort) currentLogsAbort.abort();
+  currentLogsAbort = new AbortController();
+  streamLogs(id, currentLogsAbort.signal);
 }
 
-async function streamLogs(id){
-  let lastId = 0;
-  const logsBox = $('logs-box');
-  const abortController = new AbortController();
-  window._logsAbort = abortController;
-
+async function streamLogs(id, signal){
   try {
-    const r = await fetch(API + `/api/bots/${id}/stream`, {
+    const r = await fetch(`/api/bots/${id}/stream`, {
       headers: { 'Authorization': 'Bearer ' + token },
-      signal: abortController.signal
+      signal
     });
     const reader = r.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
-
     while (true){
       const { done, value } = await reader.read();
       if (done) break;
@@ -464,10 +1041,7 @@ async function streamLogs(id){
       for (const part of parts){
         const line = part.trim();
         if (!line.startsWith('data:')) continue;
-        try {
-          const obj = JSON.parse(line.slice(5).trim());
-          appendLog(obj);
-        } catch {}
+        try { appendLog(JSON.parse(line.slice(5).trim())); } catch {}
       }
     }
   } catch(e){
@@ -479,40 +1053,211 @@ function appendLog(l){
   const box = $('logs-box');
   const div = document.createElement('div');
   div.className = 'log-line log-' + (l.type || 'out');
-  div.textContent = `[${l.ts ? new Date(l.ts).toLocaleTimeString('ar') : ''}] ${l.line}`;
+  const time = l.ts ? new Date(l.ts).toLocaleTimeString('ar-EG', {hour12:false}) : '';
+  div.textContent = `[${time}] ${l.line}`;
   box.appendChild(div);
-  if (box.children.length > 500) box.removeChild(box.firstChild);
+  if (box.children.length > 800) box.removeChild(box.firstChild);
   box.scrollTop = box.scrollHeight;
 }
 
+function clearLogsView(){ $('logs-box').innerHTML = ''; }
 function closeLogs(){
-  if (window._logsAbort){ window._logsAbort.abort(); window._logsAbort = null; }
-  $('logs-modal').classList.remove('show');
+  if (currentLogsAbort){ currentLogsAbort.abort(); currentLogsAbort = null; }
+  closeModal('logs-modal');
+}
+
+// ═══════════════ EDITOR ═══════════════
+async function openEditor(id, name){
+  currentBotId = id;
+  currentFilePath = null;
+  $('editor-title').textContent = '📝 محرر — ' + name;
+  $('editor-path').textContent = 'اختر ملفاً';
+  $('save-btn').disabled = true;
+  $('del-btn').disabled = true;
+
+  if (!editor){
+    editor = CodeMirror.fromTextArea($('code-area'), {
+      lineNumbers: true,
+      mode: 'python',
+      theme: localStorage.getItem('theme') === 'light' ? 'default' : 'material-darker',
+      matchBrackets: true,
+      autoCloseBrackets: true,
+      styleActiveLine: true,
+      indentUnit: 4,
+      tabSize: 4,
+      lineWrapping: true,
+      readOnly: true,
+    });
+  }
+
+  openModal('editor-modal');
+  await loadFileTree(id);
+}
+
+async function loadFileTree(id){
+  try {
+    const d = await api(`/api/bots/${id}/files`);
+    const tree = $('file-tree');
+    if (!d.files || !d.files.length){
+      tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted2);font-size:12px">لا ملفات</div>';
+      return;
+    }
+    tree.innerHTML = d.files.map(f => {
+      const isDir = f.type === 'dir';
+      const name = f.path.replace(/\/$/, '').split('/').pop();
+      const icon = isDir ? '📁' : fileIcon(name);
+      return `<div class="file-item ${isDir ? 'dir' : ''}" data-path="${escapeHtml(f.path)}" ${isDir ? '' : `onclick="openFile('${escapeHtml(f.path)}')"`}>
+        <span class="icon">${icon}</span>
+        <span>${escapeHtml(name)}</span>
+      </div>`;
+    }).join('');
+  } catch(e){
+    toast(e.message, 'err');
+  }
+}
+
+function fileIcon(name){
+  const ext = name.split('.').pop().toLowerCase();
+  return {
+    py: '🐍', php: '🐘', txt: '📄', md: '📝',
+    json: '⚙️', js: '📜', html: '🌐', css: '🎨',
+    env: '🔐', sh: '⚡'
+  }[ext] || '📄';
+}
+
+async function openFile(path){
+  try {
+    const d = await api(`/api/bots/${currentBotId}/file?path=${encodeURIComponent(path)}`);
+    currentFilePath = path;
+    $('editor-path').textContent = path;
+    $('save-btn').disabled = false;
+    $('del-btn').disabled = false;
+
+    const ext = path.split('.').pop().toLowerCase();
+    const mode = { py: 'python', php: 'php', js: 'javascript', json: 'javascript',
+                   html: 'xml', css: 'css', md: 'markdown' }[ext] || 'python';
+    editor.setOption('mode', mode);
+    editor.setValue(d.content);
+    editor.setOption('readOnly', false);
+    editor.refresh();
+
+    document.querySelectorAll('.file-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.path === path);
+    });
+  } catch(e){
+    toast(e.message, 'err');
+  }
+}
+
+async function saveFile(){
+  if (!currentFilePath) return;
+  try {
+    await api(`/api/bots/${currentBotId}/file`, {
+      method: 'PUT',
+      body: JSON.stringify({ path: currentFilePath, content: editor.getValue() })
+    });
+    toast('💾 تم الحفظ', 'ok');
+
+    // إعادة تشغيل تلقائية إن كان البوت يعمل
+    const b = bots.find(x => x.id === currentBotId);
+    if (b && b.status === 'running'){
+      try {
+        await api(`/api/bots/${currentBotId}/restart`, { method: 'POST' });
+        toast('🔄 تم إعادة التشغيل', 'ok');
+        await loadBots();
+      } catch {}
+    }
+  } catch(e){
+    toast(e.message, 'err');
+  }
+}
+
+async function newFile(){
+  const path = prompt('مسار الملف الجديد (مثال: config.py):');
+  if (!path) return;
+  try {
+    await api(`/api/bots/${currentBotId}/file/create`, {
+      method: 'POST',
+      body: JSON.stringify({ path: path.trim(), is_dir: false })
+    });
+    toast('✅ تم الإنشاء', 'ok');
+    await loadFileTree(currentBotId);
+    openFile(path.trim());
+  } catch(e){
+    toast(e.message, 'err');
+  }
+}
+
+function deleteCurrentFile(){
+  if (!currentFilePath) return;
+  $('confirm-title').textContent = 'حذف الملف';
+  $('confirm-text').textContent = `سيتم حذف "${currentFilePath}" نهائياً. متأكد؟`;
+  $('confirm-yes').onclick = async () => {
+    try {
+      await api(`/api/bots/${currentBotId}/file?path=${encodeURIComponent(currentFilePath)}`, { method: 'DELETE' });
+      closeModal('confirm-modal');
+      toast('🗑 تم الحذف', 'ok');
+      currentFilePath = null;
+      $('editor-path').textContent = 'اختر ملفاً';
+      editor.setValue('');
+      editor.setOption('readOnly', true);
+      $('save-btn').disabled = true;
+      $('del-btn').disabled = true;
+      await loadFileTree(currentBotId);
+    } catch(e){
+      toast(e.message, 'err');
+    }
+  };
+  openModal('confirm-modal');
+}
+
+async function restartBotFromEditor(){
+  if (!currentBotId) return;
+  try {
+    await api(`/api/bots/${currentBotId}/restart`, { method: 'POST' });
+    toast('🔄 تم إعادة التشغيل', 'ok');
+    await loadBots();
+  } catch(e){
+    toast(e.message, 'err');
+  }
+}
+
+function closeEditor(){
+  closeModal('editor-modal');
+  currentFilePath = null;
   currentBotId = null;
 }
 
-// on load
+// ═══════════════ INIT ═══════════════
 (async function init(){
-  if (token){
-    try {
-      const d = await api('/api/auth/me');
-      currentUser = d.user;
-      enterApp();
-      return;
-    } catch {
-      token = '';
-      localStorage.removeItem('token');
+  // انتظر تحميل CodeMirror
+  await new Promise(r => {
+    if (typeof CodeMirror !== 'undefined') r();
+    else {
+      const i = setInterval(() => {
+        if (typeof CodeMirror !== 'undefined'){ clearInterval(i); r(); }
+      }, 100);
+      setTimeout(() => { clearInterval(i); r(); }, 3000);
     }
-  }
-  $('auth-screen').style.display = 'flex';
-})();
+  });
 
-// Esc to close modals
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape'){
-    closeUpload(); closeLogs(); closeConfirm();
-  }
-});
+  const ok = await checkAuth();
+  if (ok) enterApp();
+  else $('auth-screen').style.display = 'flex';
+
+  // keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){
+      if ($('upload-modal').classList.contains('show')) closeModal('upload-modal');
+      else if ($('logs-modal').classList.contains('show')) closeLogs();
+      else if ($('editor-modal').classList.contains('show')) closeEditor();
+      else if ($('confirm-modal').classList.contains('show')) closeModal('confirm-modal');
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's'){
+      if (currentFilePath){ e.preventDefault(); saveFile(); }
+    }
+  });
+})();
 </script>
 </body>
 </html>
