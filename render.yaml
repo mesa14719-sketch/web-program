@@ -9,6 +9,6 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: ADMIN_EMAIL
-        value: admin@example.com
+        value: geniralbrahim15@gmail.com
       - key: PYTHON_VERSION
         value: 3.11.9
