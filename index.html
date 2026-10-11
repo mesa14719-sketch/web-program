@@ -2,10 +2,17 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#a855f7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bot Hoster">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
 <title>منصة استضافة البوتات</title>
 
-<!-- CodeMirror -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
@@ -21,103 +28,104 @@
 
 <style>
 :root{
-  --bg:#0b1020; --bg2:rgba(255,255,255,.04); --bg3:rgba(255,255,255,.06);
-  --border:rgba(255,255,255,.08); --border2:rgba(255,255,255,.15);
-  --text:#f1f5f9; --muted:#94a3b8; --muted2:#64748b;
+  --bg:#080b14; --bg2:#0e1220; --bg3:#161b2e;
+  --card:rgba(255,255,255,.03);
+  --card-hover:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.07);
+  --border2:rgba(255,255,255,.14);
+  --text:#f1f5f9; --muted:#8892a6; --muted2:#5d6784;
   --accent:#a855f7; --accent2:#06b6d4;
   --success:#22c55e; --danger:#ef4444; --warn:#f59e0b;
-  --grad:linear-gradient(135deg,#a855f7,#06b6d4);
+  --grad:linear-gradient(135deg,#a855f7 0%,#06b6d4 100%);
+  --shadow:0 20px 60px rgba(0,0,0,.4);
+  --radius:16px;
 }
 [data-theme="light"]{
-  --bg:#f8fafc; --bg2:rgba(0,0,0,.03); --bg3:rgba(0,0,0,.05);
-  --border:rgba(0,0,0,.08); --border2:rgba(0,0,0,.15);
-  --text:#0f172a; --muted:#475569; --muted2:#64748b;
+  --bg:#f5f7fa; --bg2:#ffffff; --bg3:#eef2f7;
+  --card:rgba(255,255,255,.8); --card-hover:rgba(255,255,255,1);
+  --border:rgba(0,0,0,.08); --border2:rgba(0,0,0,.16);
+  --text:#0f172a; --muted:#64748b; --muted2:#94a3b8;
+  --shadow:0 20px 60px rgba(0,0,0,.1);
 }
-*{margin:0;padding:0;box-sizing:border-box}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{
   font-family:'Segoe UI',Tahoma,sans-serif;
   background:var(--bg);color:var(--text);
   min-height:100vh;overflow-x:hidden;
-  position:relative;line-height:1.5;
   transition:background .3s,color .3s;
+  overscroll-behavior-y:none;
 }
 body::before{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(circle at 15% 20%, rgba(168,85,247,.35), transparent 45%),
-    radial-gradient(circle at 85% 30%, rgba(6,182,212,.30), transparent 45%),
-    radial-gradient(circle at 50% 90%, rgba(34,197,94,.20), transparent 50%);
-  filter:blur(60px);animation:aurora 24s ease-in-out infinite;
+    radial-gradient(circle at 15% 20%, rgba(168,85,247,.28), transparent 45%),
+    radial-gradient(circle at 85% 30%, rgba(6,182,212,.22), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(34,197,94,.15), transparent 50%);
+  filter:blur(80px);animation:aurora 24s ease-in-out infinite;
 }
-[data-theme="light"] body::before{opacity:.4}
+[data-theme="light"] body::before{opacity:.35}
 @keyframes aurora{
   0%,100%{transform:translate(0,0) scale(1)}
   33%{transform:translate(5%,-3%) scale(1.1)}
   66%{transform:translate(-5%,3%) scale(.95)}
 }
-
-::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar{width:10px;height:10px}
 ::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:4px}
-[data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(0,0,0,.15)}
-::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.25)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:5px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted2)}
 
-button{font-family:inherit;cursor:pointer;border:none;transition:.15s}
-input,textarea,select{font-family:inherit}
+button{font-family:inherit;cursor:pointer;border:none;transition:.15s;background:none;color:inherit}
+input,textarea{font-family:inherit}
 
 .hidden{display:none!important}
 
-/* ══════════ AUTH ══════════ */
-#auth-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;position:relative;z-index:1}
+/* ═══════════════ AUTH ═══════════════ */
+.auth-screen{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:20px;position:relative;z-index:1;
+}
 .auth-box{
-  background:var(--bg2);backdrop-filter:blur(24px);
-  border:1px solid var(--border);border-radius:24px;
-  padding:36px 32px;width:100%;max-width:440px;
-  box-shadow:0 20px 60px rgba(0,0,0,.4);
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:24px;padding:34px 28px;width:100%;max-width:420px;
+  box-shadow:var(--shadow);
   animation:fadeUp .5s ease;
 }
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.auth-logo{
-  text-align:center;font-size:42px;margin-bottom:8px;
+.auth-logo{font-size:48px;text-align:center;margin-bottom:8px}
+.auth-box h1{
+  font-size:22px;text-align:center;margin-bottom:6px;
   background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
 }
-.auth-box h1{font-size:22px;text-align:center;margin-bottom:6px}
-.auth-box .sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:26px}
+.auth-box .sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:22px}
 
-/* Tabs */
-.auth-tabs{display:flex;gap:8px;background:var(--bg3);padding:4px;border-radius:12px;margin-bottom:22px}
-.auth-tab{flex:1;padding:10px;border-radius:9px;background:transparent;color:var(--muted);font-size:13px;font-weight:600}
-.auth-tab.active{background:var(--grad);color:white;box-shadow:0 4px 16px rgba(168,85,247,.35)}
+.auth-tabs{display:flex;gap:5px;background:var(--bg3);padding:4px;border-radius:12px;margin-bottom:20px}
+.auth-tab{flex:1;padding:10px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted)}
+.auth-tab.active{background:var(--grad);color:white}
 
-.field{margin-bottom:16px}
-.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:7px;font-weight:600}
 .field input{
   width:100%;background:var(--bg3);border:1px solid var(--border);
-  color:var(--text);padding:12px 14px;border-radius:12px;
-  font-size:14px;outline:none;transition:.15s;
+  color:var(--text);padding:12px 14px;border-radius:11px;font-size:14px;outline:none;
+  transition:.15s;
 }
-.field input:focus{
-  border-color:rgba(168,85,247,.5);
-  box-shadow:0 0 0 3px rgba(168,85,247,.12);
-}
-.field input.err{border-color:rgba(239,68,68,.6)}
-.field .hint{font-size:11px;color:var(--muted2);margin-top:6px}
-.field .error-msg{font-size:11px;color:var(--danger);margin-top:6px;display:none}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(168,85,247,.12)}
+.field input.err{border-color:var(--danger)}
+.field .hint{font-size:11px;color:var(--muted2);margin-top:5px}
+.field .error-msg{font-size:11px;color:var(--danger);margin-top:5px;display:none}
 .field .error-msg.show{display:block}
 
 .check-row{
   display:flex;align-items:flex-start;gap:10px;
-  margin-bottom:12px;padding:12px;
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:12px;cursor:pointer;transition:.15s;
+  padding:12px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:12px;margin-bottom:14px;cursor:pointer;transition:.15s;
 }
-.check-row:hover{background:var(--bg2);border-color:var(--border2)}
 .check-row.checked{border-color:rgba(34,197,94,.4);background:rgba(34,197,94,.06)}
 .check-row input[type=checkbox]{
   appearance:none;width:20px;height:20px;min-width:20px;
   border:2px solid rgba(255,255,255,.2);border-radius:6px;
-  cursor:pointer;position:relative;transition:.15s;
+  cursor:pointer;position:relative;
 }
 .check-row input:checked{background:var(--grad);border-color:transparent}
 .check-row input:checked::after{
@@ -125,174 +133,220 @@ input,textarea,select{font-family:inherit}
   display:flex;align-items:center;justify-content:center;
   color:white;font-size:13px;font-weight:900;
 }
-.check-row .text{font-size:13px;line-height:1.5}
+.check-row .text{font-size:12px;line-height:1.5;color:var(--muted)}
 .check-row .text a{color:var(--accent);text-decoration:underline;cursor:pointer}
 
 .terms-box{
   background:var(--bg3);border:1px solid var(--border);
-  border-radius:12px;padding:16px;max-height:180px;overflow-y:auto;
-  font-size:12px;line-height:1.7;color:var(--muted);
-  margin-bottom:16px;
+  border-radius:11px;padding:14px;max-height:140px;overflow-y:auto;
+  font-size:11px;line-height:1.7;color:var(--muted);margin-bottom:14px;
 }
-.terms-box h4{color:var(--accent);font-size:13px;margin:8px 0 4px}
+.terms-box h4{color:var(--accent);font-size:12px;margin:6px 0 3px}
 .terms-box h4:first-child{margin-top:0}
 
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;
-  transition:.2s;
+  padding:12px 18px;border-radius:11px;font-size:14px;font-weight:700;
+  transition:.15s;
 }
 .btn-block{width:100%}
-.btn-primary{background:var(--grad);color:white;box-shadow:0 6px 20px rgba(168,85,247,.35)}
+.btn-primary{background:var(--grad);color:white;box-shadow:0 6px 20px rgba(168,85,247,.3)}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(168,85,247,.5)}
 .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
-.btn-ghost{background:var(--bg3);border:1px solid var(--border);color:var(--text)}
-.btn-ghost:hover{background:var(--bg2);border-color:var(--border2)}
+.btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{background:var(--card-hover)}
 .btn-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
 .btn-danger:hover{background:rgba(239,68,68,.25)}
 .btn-success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac}
 .btn-success:hover{background:rgba(34,197,94,.25)}
-.btn-sm{padding:7px 14px;font-size:12px;border-radius:9px}
-.btn-icon{padding:8px;width:36px;height:36px;justify-content:center}
+.btn-sm{padding:7px 12px;font-size:12px;border-radius:9px}
+.btn-icon{padding:9px;width:38px;height:38px;justify-content:center}
 
-.switch-link{text-align:center;font-size:13px;color:var(--muted);margin-top:18px}
-.switch-link a{color:var(--accent);cursor:pointer;font-weight:600;text-decoration:none}
-.switch-link a:hover{text-decoration:underline}
+/* ═══════════════ APP ═══════════════ */
+.app{display:none;min-height:100vh;position:relative;z-index:1}
+.app.show{display:block}
 
-/* ══════════ APP ══════════ */
-#app{display:none;min-height:100vh;position:relative;z-index:1}
-header{
-  background:var(--bg2);backdrop-filter:blur(24px);
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 24px;gap:14px;flex-wrap:wrap;
   border-bottom:1px solid var(--border);
-  padding:14px 24px;display:flex;justify-content:space-between;align-items:center;
+  background:var(--bg2);backdrop-filter:blur(20px);
   position:sticky;top:0;z-index:10;
+  padding-top:calc(16px + env(safe-area-inset-top));
 }
-header .brand{
-  font-size:18px;font-weight:800;
-  background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+.topbar h1{font-size:20px;font-weight:700}
+.topbar h1 small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:3px}
+.topbar-actions{display:flex;gap:8px;align-items:center;margin-right:auto}
+
+.search-box{flex:1;max-width:300px;position:relative;min-width:180px}
+.search-box input{
+  width:100%;padding:10px 38px 10px 14px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:11px;color:var(--text);font-size:13px;outline:none;
 }
-header .right{display:flex;align-items:center;gap:10px;font-size:13px}
-header .user-badge{
+.search-box input:focus{border-color:var(--accent)}
+.search-box .icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+
+.user-badge{
   display:flex;align-items:center;gap:8px;
-  padding:6px 12px;background:var(--bg3);border:1px solid var(--border);
-  border-radius:20px;font-size:12px;color:var(--muted);
+  padding:5px 12px;background:var(--card);
+  border:1px solid var(--border);border-radius:20px;font-size:12px;
 }
-header .user-badge .avatar{
+.user-badge .avatar{
   width:24px;height:24px;border-radius:50%;background:var(--grad);
   display:flex;align-items:center;justify-content:center;
-  color:white;font-weight:700;font-size:11px;
+  color:white;font-weight:800;font-size:11px;
+}
+.user-badge .email{color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-badge .admin-badge{
+  font-size:9px;color:#fbbf24;font-weight:700;
+  padding:2px 6px;background:rgba(251,191,36,.15);border-radius:8px;
 }
 
-main{max-width:1300px;margin:0 auto;padding:24px}
+.content{padding:24px;max-width:1300px;margin:0 auto}
+.content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.content-header h2{font-size:22px;font-weight:700}
 
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px}
-.topbar h2{font-size:24px;font-weight:700}
-.topbar .stats{display:flex;gap:18px;font-size:13px;color:var(--muted)}
-.topbar .stats b{color:var(--text);font-weight:700}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;
+  backdrop-filter:blur(12px);transition:.2s;
+}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.stat-card .label{font-size:11px;color:var(--muted);margin-bottom:6px}
+.stat-card .value{font-size:24px;font-weight:800;line-height:1}
+.stat-card .value.grad{background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-card .value.green{color:var(--success)}
+.stat-card .value.red{color:var(--danger)}
+.stat-card .foot{font-size:10px;color:var(--muted2);margin-top:5px}
 
-.bots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px}
+.filters{
+  display:flex;gap:5px;background:var(--card);border:1px solid var(--border);
+  border-radius:11px;padding:4px;margin-bottom:20px;width:fit-content;
+}
+.filter-btn{
+  padding:7px 14px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);
+}
+.filter-btn:hover{color:var(--text)}
+.filter-btn.active{background:var(--grad);color:white}
+
+.bots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
 
 .bot-card{
-  background:var(--bg2);backdrop-filter:blur(20px);
-  border:1px solid var(--border);border-radius:20px;
-  padding:20px;position:relative;overflow:hidden;
-  transition:.25s;animation:fadeUp .35s ease;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px;
+  backdrop-filter:blur(12px);
+  position:relative;overflow:hidden;transition:.25s;
+  animation:slideIn .4s ease;
 }
-.bot-card::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(168,85,247,.5),transparent);
-}
+@keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .bot-card:hover{
   transform:translateY(-3px);
-  border-color:rgba(168,85,247,.3);
-  box-shadow:0 16px 40px rgba(0,0,0,.35);
+  border-color:var(--border2);
+  background:var(--card-hover);
+  box-shadow:0 16px 40px rgba(0,0,0,.3);
 }
-.bot-card .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;gap:10px}
-.bot-card .name{font-size:16px;font-weight:700;margin-bottom:4px;word-break:break-word}
-.bot-card .meta{font-size:11px;color:var(--muted2);font-family:monospace;word-break:break-all}
+.bot-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+.bot-head .bot-avatar{
+  width:44px;height:44px;border-radius:12px;
+  background:var(--bg3);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;
+}
+.bot-head .bot-meta{flex:1;min-width:0}
+.bot-head .bot-name{font-size:15px;font-weight:700;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bot-head .bot-sub{font-size:11px;color:var(--muted);font-family:monospace}
 
 .status-pill{
   display:inline-flex;align-items:center;gap:6px;
-  font-size:11px;padding:4px 10px;border-radius:20px;
-  font-weight:700;white-space:nowrap;
+  font-size:10px;padding:4px 10px;border-radius:12px;font-weight:700;
+  white-space:nowrap;flex-shrink:0;
 }
-.status-pill::before{
-  content:'';width:6px;height:6px;border-radius:50%;background:currentColor;
-  box-shadow:0 0 8px currentColor;
-}
-.status-pill.running{background:rgba(34,197,94,.15);color:var(--success)}
-.status-pill.stopped{background:rgba(239,68,68,.15);color:var(--danger)}
+.status-pill .dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.status-pill.running{background:rgba(34,197,94,.12);color:var(--success)}
+.status-pill.stopped{background:rgba(239,68,68,.12);color:var(--danger)}
+.status-pill.running .dot{animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-.bot-card .actions{display:flex;gap:6px;margin-top:16px;flex-wrap:wrap}
-.bot-card .actions button{
-  flex:1;min-width:60px;padding:8px 10px;font-size:12px;border-radius:9px;font-weight:600;
+.bot-stats{
+  display:flex;gap:14px;font-size:11px;color:var(--muted);
+  padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  margin-bottom:12px;flex-wrap:wrap;
 }
+.bot-stats .stat{display:flex;align-items:center;gap:5px}
+.bot-stats .stat b{color:var(--text);font-family:monospace;font-size:11px}
 
-.empty-state{
-  text-align:center;padding:80px 20px;color:var(--muted);
-  background:var(--bg2);border:1px dashed var(--border);border-radius:20px;
-  grid-column:1/-1;
+.bot-actions{display:flex;gap:6px;flex-wrap:wrap}
+.bot-actions button{
+  flex:1;min-width:60px;padding:8px 10px;font-size:11px;border-radius:9px;font-weight:600;
+  background:var(--bg3);border:1px solid var(--border);color:var(--text);
 }
-.empty-state .icon{font-size:56px;margin-bottom:14px;opacity:.5}
-.empty-state h3{color:var(--text);margin-bottom:8px;font-size:18px}
+.bot-actions button:hover{background:var(--card-hover);border-color:var(--border2)}
+.bot-actions .btn-green{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25);color:#4ade80}
+.bot-actions .btn-green:hover{background:rgba(34,197,94,.2)}
+.bot-actions .btn-red{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.25);color:#f87171}
+.bot-actions .btn-red:hover{background:rgba(239,68,68,.2)}
 
-/* ══════════ MODALS ══════════ */
+.empty{
+  text-align:center;padding:70px 20px;
+  background:var(--card);border:1px dashed var(--border2);
+  border-radius:var(--radius);grid-column:1/-1;
+}
+.empty .icon{font-size:64px;margin-bottom:16px;opacity:.4}
+.empty h3{font-size:18px;margin-bottom:8px}
+.empty p{color:var(--muted);font-size:13px;margin-bottom:20px}
+
+/* ═══════════════ MODAL ═══════════════ */
 .modal-bg{
   position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
-  display:none;align-items:center;justify-content:center;z-index:100;padding:20px;
+  z-index:100;display:none;align-items:center;justify-content:center;padding:20px;
   animation:fadeIn .2s;
 }
 .modal-bg.show{display:flex}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-
 .modal{
-  background:var(--bg);border:1px solid var(--border);
+  background:var(--bg2);border:1px solid var(--border2);
   border-radius:20px;padding:24px;width:100%;max-width:520px;
   max-height:90vh;overflow-y:auto;
+  box-shadow:var(--shadow);
   animation:pop .25s ease;
 }
-.modal.wide{max-width:900px}
-.modal.tall{max-height:92vh}
-@keyframes pop{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
-
-.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
-.modal-head h3{font-size:18px;font-weight:700}
-.modal-head .close{
-  width:32px;height:32px;border-radius:8px;background:var(--bg3);
-  color:var(--muted);font-size:18px;line-height:1;
+@keyframes pop{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal.wide{max-width:1000px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.modal-head h3{font-size:17px;font-weight:700}
+.modal-close{
+  width:32px;height:32px;border-radius:9px;background:var(--card);
+  color:var(--muted);font-size:16px;
 }
-.modal-head .close:hover{background:var(--border);color:var(--text)}
+.modal-close:hover{background:var(--card-hover);color:var(--text)}
 
-.modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.tabs{display:flex;gap:5px;background:var(--bg3);padding:4px;border-radius:11px;margin-bottom:18px}
+.tab{flex:1;padding:9px;border-radius:8px;font-size:12px;font-weight:600;color:var(--muted)}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--grad);color:white}
 
-/* Tabs for upload */
-.upload-tabs{display:flex;gap:6px;background:var(--bg3);padding:4px;border-radius:12px;margin-bottom:20px}
-.upload-tab{flex:1;padding:10px;border-radius:9px;background:transparent;color:var(--muted);font-size:13px;font-weight:600}
-.upload-tab.active{background:var(--grad);color:white}
-
-/* File drop */
-.drop-zone{
-  border:2px dashed var(--border2);border-radius:14px;
-  padding:22px;text-align:center;color:var(--muted);font-size:13px;
-  cursor:pointer;transition:.2s;background:var(--bg3);
+.drop{
+  border:2px dashed var(--border2);border-radius:12px;
+  padding:20px 16px;text-align:center;
+  color:var(--muted);font-size:13px;cursor:pointer;transition:.2s;
+  background:var(--bg3);display:block;
 }
-.drop-zone:hover{border-color:var(--accent);color:var(--text);background:var(--bg2)}
-.drop-zone.has-file{border-color:var(--success);color:var(--success);background:rgba(34,197,94,.05)}
-.drop-zone .icon{font-size:28px;margin-bottom:6px;display:block}
-.drop-zone input{display:none}
+.drop:hover{border-color:var(--accent);background:var(--card);color:var(--text)}
+.drop.has{border-color:var(--success);background:rgba(34,197,94,.05);color:#86efac}
+.drop .icon{font-size:26px;display:block;margin-bottom:6px}
+.drop input{display:none}
+
+.modal-foot{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
 
 .file-badge{
   display:flex;justify-content:space-between;align-items:center;
-  padding:10px 14px;background:var(--bg3);border:1px solid var(--border);
-  border-radius:10px;margin-bottom:8px;font-size:13px;
-  animation:fadeUp .2s;
+  padding:8px 12px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:9px;margin-top:8px;font-size:12px;
 }
-.file-badge .name{display:flex;align-items:center;gap:8px;word-break:break-all}
-.file-badge .del{background:transparent;color:var(--danger);padding:4px;font-size:14px}
 
-/* Logs */
 .logs-box{
-  background:#050810;border:1px solid var(--border);border-radius:12px;
+  background:#050810;border:1px solid var(--border);border-radius:11px;
   padding:14px;height:420px;overflow-y:auto;
   font-family:'Consolas','Monaco',monospace;font-size:12px;line-height:1.55;
   direction:ltr;text-align:left;
@@ -302,61 +356,44 @@ main{max-width:1300px;margin:0 auto;padding:24px}
 .log-err{color:#f85149}
 .log-sys{color:#58a6ff}
 
-/* Editor */
-.editor-layout{display:grid;grid-template-columns:240px 1fr;gap:14px;height:calc(90vh - 160px);min-height:400px}
+.editor-layout{display:grid;grid-template-columns:220px 1fr;gap:12px;height:500px}
 .file-tree{
-  background:var(--bg3);border:1px solid var(--border);
-  border-radius:12px;overflow-y:auto;padding:10px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:11px;
+  padding:8px;overflow-y:auto;
 }
 .file-item{
-  display:flex;align-items:center;gap:6px;
-  padding:6px 8px;border-radius:6px;font-size:12px;
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;border-radius:8px;font-size:12px;
   cursor:pointer;color:var(--muted);font-family:monospace;
   word-break:break-all;
 }
-.file-item:hover{background:var(--bg2);color:var(--text)}
-.file-item.active{background:var(--bg2);color:var(--accent);font-weight:600}
+.file-item:hover{background:var(--card);color:var(--text)}
+.file-item.active{background:var(--grad);color:white}
 .file-item.dir{color:var(--accent2);cursor:default;font-weight:600}
-.file-item .icon{font-size:12px;min-width:14px}
 
-.editor-panel{display:flex;flex-direction:column;gap:10px;overflow:hidden}
 .editor-toolbar{
   display:flex;justify-content:space-between;align-items:center;gap:8px;
   padding:8px 12px;background:var(--bg3);border:1px solid var(--border);
-  border-radius:10px;font-size:12px;flex-wrap:wrap;
+  border-radius:10px;margin-bottom:8px;font-size:12px;flex-wrap:wrap;
 }
 .editor-toolbar .path{color:var(--accent2);font-family:monospace;font-weight:600}
-.CodeMirror{
-  height:100%!important;border-radius:12px;border:1px solid var(--border);
-  font-family:'Consolas','Monaco',monospace!important;font-size:13px;
-}
 
-/* Toast */
+.CodeMirror{height:calc(100% - 48px)!important;border-radius:11px;border:1px solid var(--border);font-size:13px}
+
 .toast{
-  position:fixed;top:22px;left:50%;transform:translate(-50%,-100px);
+  position:fixed;bottom:24px;left:50%;
+  transform:translate(-50%,100px);
   background:var(--bg2);backdrop-filter:blur(20px);
-  border:1px solid var(--border);
-  padding:12px 20px;border-radius:12px;font-size:13px;
-  opacity:0;transition:.35s;pointer-events:none;z-index:1000;
-  box-shadow:0 8px 32px rgba(0,0,0,.4);max-width:90vw;
+  border:1px solid var(--border2);border-radius:13px;
+  padding:13px 20px;font-size:13px;
+  box-shadow:var(--shadow);opacity:0;transition:.4s;pointer-events:none;z-index:1000;
+  display:flex;align-items:center;gap:10px;max-width:90vw;
 }
-.toast.show{opacity:1;transform:translate(-50%,0);top:22px}
-.toast.err{border-color:rgba(239,68,68,.4);color:#fca5a5}
-.toast.ok{border-color:rgba(34,197,94,.4);color:#86efac}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{border-color:rgba(34,197,94,.3)}
+.toast.err{border-color:rgba(239,68,68,.3)}
+.toast .icon{font-size:16px}
 
-/* Loading skeleton */
-.skeleton{
-  background:linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%);
-  background-size:200% 100%;animation:shimmer 1.5s infinite;
-  border-radius:12px;height:120px;
-}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-
-/* Confirm */
-.confirm-box{max-width:400px}
-.confirm-box p{color:var(--muted);font-size:14px;margin-bottom:20px}
-
-/* Loader dot */
 .loader{
   display:inline-block;width:14px;height:14px;
   border:2px solid rgba(255,255,255,.2);border-top-color:white;
@@ -364,50 +401,49 @@ main{max-width:1300px;margin:0 auto;padding:24px}
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Mobile */
-@media(max-width:768px){
-  main{padding:16px}
-  header{padding:12px 16px}
-  header .brand{font-size:16px}
-  header .user-badge span.email{display:none}
+@media(max-width:900px){
+  .content{padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+  .topbar{padding:14px 16px}
+  .topbar h1{font-size:17px}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
   .bots-grid{grid-template-columns:1fr}
   .editor-layout{grid-template-columns:1fr;height:auto}
-  .file-tree{max-height:200px}
-  .CodeMirror{height:400px!important}
-  .modal{padding:20px}
+  .file-tree{max-height:150px}
+  .CodeMirror{height:350px!important}
+  .modal{padding:20px;max-height:95vh}
+  .search-box{order:3;max-width:none;flex:1 1 100%}
+  .user-badge .email{max-width:80px}
 }
 </style>
 </head>
-<body>
+<body data-theme="dark">
 
-<div class="toast" id="toast"></div>
-
-<!-- ═══════════════ AUTH SCREEN ═══════════════ -->
-<div id="auth-screen">
+<!-- ═══════════════ AUTH ═══════════════ -->
+<div class="auth-screen" id="auth-screen">
   <div class="auth-box">
     <div class="auth-logo">🤖</div>
     <h1>منصة استضافة البوتات</h1>
-    <p class="sub">استضف بوتات Python و PHP بسهولة</p>
+    <p class="sub">استضف بوتات Python و PHP</p>
 
     <div class="auth-tabs">
-      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">تسجيل دخول</button>
-      <button class="auth-tab" id="tab-register" onclick="switchTab('register')">حساب جديد</button>
+      <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">دخول</button>
+      <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">حساب جديد</button>
     </div>
 
-    <!-- LOGIN -->
+    <!-- Login -->
     <div id="form-login">
       <div class="field">
-        <label>البريد الإلكتروني</label>
+        <label>البريد</label>
         <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
       </div>
       <div class="field">
         <label>كلمة المرور</label>
         <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <button class="btn btn-primary btn-block" onclick="doLogin()">دخول</button>
+      <button class="btn btn-primary btn-block" id="login-btn" onclick="doLogin()">دخول</button>
     </div>
 
-    <!-- REGISTER -->
+    <!-- Register -->
     <div id="form-register" class="hidden">
       <div class="field">
         <label>البريد الإلكتروني</label>
@@ -425,128 +461,144 @@ main{max-width:1300px;margin:0 auto;padding:24px}
         <input type="password" id="reg-password2" placeholder="أعد الإدخال">
         <div class="error-msg" id="reg-password2-err"></div>
       </div>
-
       <div class="terms-box">
         <h4>📜 الشروط والأحكام</h4>
-        باستخدامك للمنصة، أنت توافق على الالتزام بالقوانين المحلية والدولية. لا يُسمح باستخدام المنصة لأي نشاط غير قانوني أو لنشر محتوى ضار. تحتفظ المنصة بحق إيقاف أي حساب مخالف دون إشعار مسبق.
+        باستخدامك للمنصة، أنت توافق على الالتزام بالقوانين المحلية والدولية. لا يُسمح باستخدام المنصة لأي نشاط غير قانوني أو لنشر محتوى ضار. تحتفظ المنصة بحق إيقاف أي حساب مخالف.
         <h4>🔒 سياسة الخصوصية</h4>
-        نجمع البريد الإلكتروني وكلمة المرور المشفرة والملفات التي ترفعها وسجلات تشغيلها. تُستخدم هذه البيانات فقط لتشغيل حسابك وعرض لوحة التحكم. لا نشارك بياناتك مع أي طرف ثالث. يمكنك حذف حسابك وكل بياناتك في أي وقت.
+        نجمع البريد الإلكتروني وكلمة المرور المشفرة والملفات التي ترفعها وسجلات تشغيلها. تُستخدم هذه البيانات فقط لتشغيل حسابك. لا نشاركها مع أي طرف ثالث. يمكنك حذف حسابك وكل بياناتك في أي وقت.
         <h4>⚠️ المسؤولية</h4>
         أنت المسؤول الكامل عن محتوى البوتات التي ترفعها.
       </div>
-
-      <label class="check-row" id="chk-terms-row">
-        <input type="checkbox" id="chk-terms" onchange="updateRegBtn()">
+      <label class="check-row" id="terms-row">
+        <input type="checkbox" id="terms-check" onchange="updateRegBtn()">
         <span class="text">أوافق على الشروط والأحكام وسياسة الخصوصية</span>
       </label>
-
       <button class="btn btn-primary btn-block" id="reg-btn" onclick="doRegister()" disabled>إنشاء الحساب</button>
     </div>
   </div>
 </div>
 
 <!-- ═══════════════ APP ═══════════════ -->
-<div id="app">
-  <header>
-    <div class="brand">🤖 منصة الاستضافة</div>
-    <div class="right">
-      <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" title="الوضع الليلي/النهاري" id="theme-btn">🌙</button>
+<div class="app" id="app">
+  <div class="topbar">
+    <h1>لوحة التحكم<small id="greeting">مرحباً بك</small></h1>
+    <div class="topbar-actions">
       <div class="user-badge">
         <div class="avatar" id="user-avatar">?</div>
-        <span class="email" id="user-email"></span>
+        <span class="email" id="user-email">...</span>
+        <span class="admin-badge hidden" id="admin-badge">👑 أدمن</span>
       </div>
+      <button class="btn btn-ghost btn-icon" onclick="toggleTheme()" id="theme-btn">🌙</button>
       <button class="btn btn-ghost btn-sm" onclick="logout()">خروج</button>
     </div>
-  </header>
+    <div class="search-box">
+      <input type="text" placeholder="ابحث عن بوت..." oninput="filterBots(this.value)">
+      <span class="icon">🔍</span>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('upload-modal')">
+      <span>+</span><span>بوت جديد</span>
+    </button>
+  </div>
 
-  <main>
-    <div class="topbar">
-      <h2>بوتاتي</h2>
-      <div class="stats">
-        <span>الكل: <b id="stat-total">0</b></span>
-        <span>يعمل: <b id="stat-running">0</b></span>
-        <span>متوقف: <b id="stat-stopped">0</b></span>
+  <div class="content">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="label">إجمالي البوتات</div>
+        <div class="value grad" id="stat-total">0</div>
+        <div class="foot">كل بوتاتك</div>
       </div>
-      <button class="btn btn-primary" onclick="openUpload()">+ بوت جديد</button>
+      <div class="stat-card">
+        <div class="label">يعمل حالياً</div>
+        <div class="value green" id="stat-running">0</div>
+        <div class="foot">نشطة</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">متوقف</div>
+        <div class="value red" id="stat-stopped">0</div>
+        <div class="foot">غير نشطة</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">من GitHub</div>
+        <div class="value" style="color:var(--accent2)" id="stat-github">0</div>
+        <div class="foot">مستوردة</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter('all', this)">الكل</button>
+      <button class="filter-btn" onclick="setFilter('running', this)">يعمل</button>
+      <button class="filter-btn" onclick="setFilter('stopped', this)">متوقف</button>
+      <button class="filter-btn" onclick="setFilter('github', this)">GitHub</button>
     </div>
 
     <div class="bots-grid" id="bots-grid"></div>
-  </main>
+  </div>
 </div>
 
 <!-- ═══════════════ MODAL: UPLOAD ═══════════════ -->
 <div class="modal-bg" id="upload-modal">
   <div class="modal">
     <div class="modal-head">
-      <h3>📤 إضافة بوت جديد</h3>
-      <button class="close" onclick="closeModal('upload-modal')">✕</button>
+      <h3>📤 إضافة بوت</h3>
+      <button class="modal-close" onclick="closeModal('upload-modal')">✕</button>
     </div>
 
-    <div class="upload-tabs">
-      <button class="upload-tab active" id="utab-files" onclick="switchUploadTab('files')">📁 ملفات</button>
-      <button class="upload-tab" id="utab-github" onclick="switchUploadTab('github')">🐙 GitHub</button>
+    <div class="tabs">
+      <button class="tab active" id="utab-files" onclick="switchUploadTab('files')">📁 ملفات</button>
+      <button class="tab" id="utab-github" onclick="switchUploadTab('github')">🐙 GitHub</button>
     </div>
 
-    <!-- FILES -->
-    <div id="upload-files-panel">
+    <div id="panel-files">
       <div class="field">
         <label>اسم البوت</label>
         <input type="text" id="up-name" placeholder="My Bot" maxlength="60">
       </div>
-
       <div class="field">
-        <label>📄 ملف البوت الرئيسي (إلزامي) — .py / .php / .zip</label>
-        <label class="drop-zone" id="drop-main" for="f-main">
+        <label>ملف البوت (.py / .php / .zip)</label>
+        <label class="drop" id="drop-main" for="f-main">
           <span class="icon">📎</span>
           <span id="drop-main-text">اسحب الملف أو اضغط للاختيار</span>
           <input type="file" id="f-main" accept=".py,.php,.zip" onchange="onFilePicked('main')">
         </label>
       </div>
-
       <div class="field">
-        <label>📦 ملف المكتبات (اختياري) — requirements.txt</label>
-        <label class="drop-zone" id="drop-req" for="f-req">
+        <label>requirements.txt (اختياري)</label>
+        <label class="drop" id="drop-req" for="f-req">
           <span class="icon">📦</span>
-          <span id="drop-req-text">اسحب الملف أو اضغط للاختيار</span>
+          <span id="drop-req-text">اختياري — Python فقط</span>
           <input type="file" id="f-req" accept=".txt" onchange="onFilePicked('req')">
         </label>
       </div>
-
       <div class="field">
-        <label>📎 ملفات إضافية (اختياري) — متعددة</label>
-        <label class="drop-zone" id="drop-extra" for="f-extra">
+        <label>ملفات إضافية (اختياري)</label>
+        <label class="drop" id="drop-extra" for="f-extra">
           <span class="icon">📁</span>
-          <span id="drop-extra-text">اسحب الملفات أو اضغط للاختيار</span>
-          <input type="file" id="f-extra" multiple onchange="onFilesPicked('extra')">
+          <span id="drop-extra-text">اختياري — متعددة</span>
+          <input type="file" id="f-extra" multiple onchange="onFilesPicked()">
         </label>
         <div id="extras-list"></div>
       </div>
-
-      <div class="row">
-        <button class="btn btn-ghost" onclick="closeModal('upload-modal')">إلغاء</button>
-        <button class="btn btn-primary" id="upload-files-btn" onclick="submitUploadFiles()">رفع البوت</button>
-      </div>
     </div>
 
-    <!-- GITHUB -->
-    <div id="upload-github-panel" class="hidden">
+    <div id="panel-github" class="hidden">
       <div class="field">
         <label>اسم البوت</label>
         <input type="text" id="gh-name" placeholder="My Bot" maxlength="60">
       </div>
       <div class="field">
-        <label>🔗 رابط المستودع</label>
-        <input type="text" id="gh-url" placeholder="https://github.com/username/repo">
-        <div class="hint">يجب أن يكون المستودع عاماً ويحتوي على bot.py أو main.py و requirements.txt</div>
+        <label>رابط المستودع</label>
+        <input type="text" id="gh-url" placeholder="https://github.com/user/repo">
+        <div class="hint">يجب أن يكون المستودع عاماً</div>
       </div>
       <div class="field">
-        <label>🌿 الفرع</label>
-        <input type="text" id="gh-branch" placeholder="main" value="main">
+        <label>الفرع</label>
+        <input type="text" id="gh-branch" value="main">
       </div>
-      <div class="row">
-        <button class="btn btn-ghost" onclick="closeModal('upload-modal')">إلغاء</button>
-        <button class="btn btn-primary" id="upload-gh-btn" onclick="submitImportGithub()">استيراد</button>
-      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('upload-modal')">إلغاء</button>
+      <button class="btn btn-primary" id="upload-submit" onclick="submitUpload()">رفع</button>
     </div>
   </div>
 </div>
@@ -556,34 +608,33 @@ main{max-width:1300px;margin:0 auto;padding:24px}
   <div class="modal wide">
     <div class="modal-head">
       <h3 id="logs-title">📋 السجل</h3>
-      <button class="close" onclick="closeLogs()">✕</button>
+      <button class="modal-close" onclick="closeLogs()">✕</button>
     </div>
     <div class="logs-box" id="logs-box"></div>
-    <div class="row">
-      <button class="btn btn-ghost btn-sm" onclick="clearLogsView()">مسح العرض</button>
-      <button class="btn btn-ghost" onclick="closeLogs()">إغلاق</button>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('logs-box').innerHTML=''">مسح العرض</button>
+      <button class="btn btn-primary" onclick="closeLogs()">إغلاق</button>
     </div>
   </div>
 </div>
 
 <!-- ═══════════════ MODAL: EDITOR ═══════════════ -->
 <div class="modal-bg" id="editor-modal">
-  <div class="modal wide tall">
+  <div class="modal wide">
     <div class="modal-head">
       <h3 id="editor-title">📝 محرر الملفات</h3>
-      <button class="close" onclick="closeEditor()">✕</button>
+      <button class="modal-close" onclick="closeEditor()">✕</button>
     </div>
-
     <div class="editor-layout">
       <div class="file-tree" id="file-tree"></div>
-      <div class="editor-panel">
+      <div>
         <div class="editor-toolbar">
           <span class="path" id="editor-path">اختر ملفاً</span>
-          <div style="display:flex;gap:6px">
+          <div style="display:flex;gap:5px;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm" onclick="newFile()">+ ملف</button>
-            <button class="btn btn-ghost btn-sm" id="save-btn" onclick="saveFile()" disabled>💾 حفظ</button>
-            <button class="btn btn-danger btn-sm" id="del-btn" onclick="deleteCurrentFile()" disabled>🗑 حذف</button>
-            <button class="btn btn-success btn-sm" onclick="restartBotFromEditor()">🔄 إعادة تشغيل</button>
+            <button class="btn btn-success btn-sm" id="save-btn" onclick="saveFile()" disabled>💾 حفظ</button>
+            <button class="btn btn-danger btn-sm" id="del-btn" onclick="deleteFile()" disabled>🗑</button>
+            <button class="btn btn-ghost btn-sm" onclick="restartBot()">🔄 إعادة تشغيل</button>
           </div>
         </div>
         <textarea id="code-area"></textarea>
@@ -594,49 +645,54 @@ main{max-width:1300px;margin:0 auto;padding:24px}
 
 <!-- ═══════════════ MODAL: CONFIRM ═══════════════ -->
 <div class="modal-bg" id="confirm-modal">
-  <div class="modal confirm-box">
+  <div class="modal" style="max-width:400px">
     <div class="modal-head">
       <h3 id="confirm-title">تأكيد</h3>
-      <button class="close" onclick="closeModal('confirm-modal')">✕</button>
+      <button class="modal-close" onclick="closeModal('confirm-modal')">✕</button>
     </div>
-    <p id="confirm-text"></p>
-    <div class="row">
+    <p id="confirm-text" style="color:var(--muted);font-size:14px;margin-bottom:18px"></p>
+    <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('confirm-modal')">إلغاء</button>
       <button class="btn btn-danger" id="confirm-yes">تأكيد</button>
     </div>
   </div>
 </div>
 
+<div class="toast" id="toast"><span class="icon" id="toast-icon">✓</span><span id="toast-text"></span></div>
+
 <script>
-// ═══════════════ STATE ═══════════════
+const $ = id => document.getElementById(id);
 const API = '';
+
 let token = localStorage.getItem('token') || '';
 let currentUser = null;
 let bots = [];
 let currentBotId = null;
-let currentLogsAbort = null;
+let logsAbort = null;
 let editor = null;
 let currentFilePath = null;
 let uploadState = { main: null, req: null, extras: [] };
+let currentFilter = 'all';
+let currentSearch = '';
 
 // ═══════════════ HELPERS ═══════════════
-const $ = id => document.getElementById(id);
-
 function escapeHtml(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
 }
 
-function toast(msg, type = ''){
+let toastTimer;
+function toast(msg, type='ok'){
   const t = $('toast');
-  t.textContent = msg;
+  $('toast-text').textContent = msg;
+  $('toast-icon').textContent = type === 'ok' ? '✓' : '✕';
   t.className = 'toast show ' + type;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
 }
 
-async function api(path, opts = {}){
+async function api(path, opts={}){
   const headers = opts.headers || {};
   if (token) headers['Authorization'] = 'Bearer ' + token;
   if (!(opts.body instanceof FormData) && opts.body && !headers['Content-Type']){
@@ -660,6 +716,7 @@ function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   localStorage.setItem('theme', t);
   $('theme-btn').textContent = t === 'light' ? '☀️' : '🌙';
+  if (editor) editor.setOption('theme', t === 'dark' ? 'material-darker' : 'default');
 }
 function toggleTheme(){
   const cur = document.documentElement.getAttribute('data-theme') || 'dark';
@@ -668,7 +725,7 @@ function toggleTheme(){
 applyTheme(localStorage.getItem('theme') || 'dark');
 
 // ═══════════════ AUTH ═══════════════
-function switchTab(which){
+function switchAuthTab(which){
   $('tab-login').classList.toggle('active', which === 'login');
   $('tab-register').classList.toggle('active', which === 'register');
   $('form-login').classList.toggle('hidden', which !== 'login');
@@ -676,19 +733,28 @@ function switchTab(which){
 }
 
 function updateRegBtn(){
-  const checked = $('chk-terms').checked;
+  const checked = $('terms-check').checked;
   $('reg-btn').disabled = !checked;
-  $('chk-terms-row').classList.toggle('checked', checked);
+  $('terms-row').classList.toggle('checked', checked);
+}
+
+function showRegErr(field, msg){
+  const el = $(field + '-err');
+  const inp = $(field);
+  if (msg){ el.textContent = msg; el.classList.add('show'); inp.classList.add('err'); }
+  else { el.classList.remove('show'); inp.classList.remove('err'); }
 }
 
 async function doLogin(){
-  const email = $('login-email').value.trim();
+  const email = $('login-email').value.trim().toLowerCase();
   const password = $('login-password').value;
   if (!email || !password) return toast('املأ كل الحقول', 'err');
-  const btn = event.target;
-  const oldText = btn.textContent;
+
+  const btn = $('login-btn');
+  const old = btn.textContent;
   btn.disabled = true;
   btn.innerHTML = '<span class="loader"></span>';
+
   try {
     const d = await api('/api/auth/login', {
       method: 'POST',
@@ -698,19 +764,11 @@ async function doLogin(){
     localStorage.setItem('token', token);
     currentUser = d.user;
     enterApp();
-  } catch(e){
-    toast(e.message, 'err');
-  } finally {
+  } catch(e){ toast(e.message, 'err'); }
+  finally {
     btn.disabled = false;
-    btn.textContent = oldText;
+    btn.textContent = old;
   }
-}
-
-function showRegErr(field, msg){
-  const el = $(field + '-err');
-  const inp = $(field.replace('-err',''));
-  if (msg){ el.textContent = msg; el.classList.add('show'); inp && inp.classList.add('err'); }
-  else { el.classList.remove('show'); inp && inp.classList.remove('err'); }
 }
 
 async function doRegister(){
@@ -721,21 +779,18 @@ async function doRegister(){
   const p2 = $('reg-password2').value;
 
   let err = false;
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
-    showRegErr('reg-email', 'بريد غير صالح'); err = true;
-  }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ showRegErr('reg-email', 'بريد غير صالح'); err = true; }
   if (p1.length < 8){ showRegErr('reg-password', 'كلمة المرور 8 أحرف على الأقل'); err = true; }
-  else if (!/[A-Za-z]/.test(p1) || !/\d/.test(p1)){
-    showRegErr('reg-password', 'يجب أن تحتوي حرفاً ورقماً'); err = true;
-  }
+  else if (!/[A-Za-z]/.test(p1) || !/\d/.test(p1)){ showRegErr('reg-password', 'يجب أن تحتوي حرفاً ورقماً'); err = true; }
   if (p1 !== p2){ showRegErr('reg-password2', 'كلمتا المرور غير متطابقتين'); err = true; }
-  if (!$('chk-terms').checked){ toast('يجب الموافقة على الشروط', 'err'); err = true; }
+  if (!$('terms-check').checked){ toast('يجب الموافقة على الشروط', 'err'); err = true; }
   if (err) return;
 
   const btn = $('reg-btn');
-  const oldText = btn.textContent;
+  const old = btn.textContent;
   btn.disabled = true;
   btn.innerHTML = '<span class="loader"></span>';
+
   try {
     const d = await api('/api/auth/register', {
       method: 'POST',
@@ -744,13 +799,12 @@ async function doRegister(){
     token = d.token;
     localStorage.setItem('token', token);
     currentUser = d.user;
-    toast('🎉 تم إنشاء الحساب', 'ok');
+    toast('🎉 تم إنشاء الحساب');
     enterApp();
-  } catch(e){
-    toast(e.message, 'err');
-  } finally {
+  } catch(e){ toast(e.message, 'err'); }
+  finally {
     btn.disabled = false;
-    btn.textContent = oldText;
+    btn.textContent = old;
   }
 }
 
@@ -758,19 +812,21 @@ function logout(){
   token = '';
   currentUser = null;
   localStorage.removeItem('token');
-  if (currentLogsAbort){ currentLogsAbort.abort(); currentLogsAbort = null; }
-  $('app').style.display = 'none';
+  if (logsAbort){ logsAbort.abort(); logsAbort = null; }
+  document.querySelectorAll('.modal-bg.show').forEach(m => m.classList.remove('show'));
+  $('app').classList.remove('show');
   $('auth-screen').style.display = 'flex';
-  closeModal('logs-modal'); closeModal('editor-modal'); closeModal('upload-modal');
 }
 
 async function enterApp(){
   $('auth-screen').style.display = 'none';
-  $('app').style.display = 'block';
+  $('app').classList.add('show');
   $('user-email').textContent = currentUser.email;
   $('user-avatar').textContent = (currentUser.email[0] || '?').toUpperCase();
+  $('admin-badge').classList.toggle('hidden', !currentUser.is_admin);
+  $('greeting').textContent = currentUser.is_admin ? 'أهلاً أيها الأدمن 👑' : 'مرحباً بك 👋';
   await loadBots();
-  setInterval(loadBots, 6000);
+  setInterval(loadBots, 8000);
 }
 
 async function checkAuth(){
@@ -793,9 +849,7 @@ async function loadBots(){
     bots = d.bots || [];
     renderBots();
   } catch(e){
-    if (e.message.includes('401') || e.message.toLowerCase().includes('token')){
-      logout();
-    }
+    if (e.message.includes('401') || e.message.toLowerCase().includes('token')) logout();
   }
 }
 
@@ -803,50 +857,75 @@ function renderBots(){
   const grid = $('bots-grid');
   const running = bots.filter(b => b.status === 'running').length;
   const stopped = bots.length - running;
+  const github = bots.filter(b => b.source === 'github').length;
+
   $('stat-total').textContent = bots.length;
   $('stat-running').textContent = running;
   $('stat-stopped').textContent = stopped;
+  $('stat-github').textContent = github;
 
-  if (!bots.length){
+  let filtered = bots.filter(b => {
+    if (currentFilter === 'running' && b.status !== 'running') return false;
+    if (currentFilter === 'stopped' && b.status !== 'stopped') return false;
+    if (currentFilter === 'github' && b.source !== 'github') return false;
+    if (currentSearch && !b.name.toLowerCase().includes(currentSearch.toLowerCase())) return false;
+    return true;
+  });
+
+  if (!filtered.length){
     grid.innerHTML = `
-      <div class="empty-state">
+      <div class="empty">
         <div class="icon">🤖</div>
-        <h3>لا توجد بوتات</h3>
-        <p>اضغط "+ بوت جديد" للبدء</p>
+        <h3>${bots.length ? 'لا نتائج للبحث' : 'لا توجد بوتات'}</h3>
+        <p>${bots.length ? 'جرّب كلمة بحث أخرى' : 'اضغط "+ بوت جديد" للبدء'}</p>
       </div>`;
     return;
   }
 
-  grid.innerHTML = bots.map(b => `
+  grid.innerHTML = filtered.map(b => `
     <div class="bot-card">
-      <div class="head">
-        <div>
-          <div class="name">${escapeHtml(b.name)}</div>
-          <div class="meta">${escapeHtml(b.type)} • ${escapeHtml(b.entry_file)}</div>
+      <div class="bot-head">
+        <div class="bot-avatar">${b.type === 'python' ? '🐍' : '🐘'}</div>
+        <div class="bot-meta">
+          <div class="bot-name">${escapeHtml(b.name)}</div>
+          <div class="bot-sub">${escapeHtml(b.entry_file)}</div>
         </div>
         <div class="status-pill ${b.status}">
+          <span class="dot"></span>
           ${b.status === 'running' ? 'يعمل' : 'متوقف'}
         </div>
       </div>
-      ${b.source === 'github' ? '<div class="meta">🐙 مستورد من GitHub</div>' : ''}
-      <div class="actions">
+      <div class="bot-stats">
+        <div class="stat">📅 <b>${new Date(b.created_at).toLocaleDateString('ar-EG')}</b></div>
+        ${b.source === 'github' ? '<div class="stat">🐙 <b>GitHub</b></div>' : ''}
+      </div>
+      <div class="bot-actions">
         ${b.status === 'running'
-          ? `<button class="btn btn-danger btn-sm" onclick="stopBot('${b.id}')">إيقاف</button>`
-          : `<button class="btn btn-success btn-sm" onclick="startBot('${b.id}')">تشغيل</button>`}
-        <button class="btn btn-ghost btn-sm" onclick="openLogs('${b.id}', '${escapeHtml(b.name)}')">سجل</button>
-        <button class="btn btn-ghost btn-sm" onclick="openEditor('${b.id}', '${escapeHtml(b.name)}')">محرر</button>
-        ${b.source === 'github' ? `<button class="btn btn-ghost btn-sm" onclick="updateFromGithub('${b.id}')">🔄 تحديث</button>` : ''}
-        <button class="btn btn-danger btn-sm" onclick="confirmDelete('${b.id}', '${escapeHtml(b.name)}')">حذف</button>
+          ? `<button class="btn-red" onclick="stopBot('${b.id}')">إيقاف</button>`
+          : `<button class="btn-green" onclick="startBot('${b.id}')">تشغيل</button>`}
+        <button onclick="openLogs('${b.id}', '${escapeHtml(b.name)}')">سجل</button>
+        <button onclick="openEditor('${b.id}', '${escapeHtml(b.name)}')">محرر</button>
+        ${b.source === 'github' ? `<button onclick="updateFromGithub('${b.id}')">🔄 تحديث</button>` : ''}
+        <button class="btn-red" onclick="confirmDelete('${b.id}', '${escapeHtml(b.name)}')">🗑</button>
       </div>
     </div>
   `).join('');
 }
 
+function setFilter(f, el){
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderBots();
+}
+
+function filterBots(v){ currentSearch = v; renderBots(); }
+
 async function startBot(id){
   try {
     toast('جارٍ التشغيل...');
     await api(`/api/bots/${id}/start`, { method: 'POST' });
-    toast('✅ البوت يعمل', 'ok');
+    toast('✅ البوت يعمل');
     await loadBots();
   } catch(e){ toast('فشل: ' + e.message, 'err'); }
 }
@@ -854,7 +933,16 @@ async function startBot(id){
 async function stopBot(id){
   try {
     await api(`/api/bots/${id}/stop`, { method: 'POST' });
-    toast('⏹ تم الإيقاف', 'ok');
+    toast('⏹ تم الإيقاف');
+    await loadBots();
+  } catch(e){ toast('فشل: ' + e.message, 'err'); }
+}
+
+async function updateFromGithub(id){
+  try {
+    toast('🔄 جارٍ التحديث...');
+    await api(`/api/bots/${id}/update-from-github`, { method: 'POST' });
+    toast('✅ تم التحديث');
     await loadBots();
   } catch(e){ toast('فشل: ' + e.message, 'err'); }
 }
@@ -866,143 +954,102 @@ function confirmDelete(id, name){
     try {
       await api(`/api/bots/${id}`, { method: 'DELETE' });
       closeModal('confirm-modal');
-      toast('🗑 تم الحذف', 'ok');
+      toast('🗑 تم الحذف');
       await loadBots();
     } catch(e){ toast(e.message, 'err'); }
   };
   openModal('confirm-modal');
 }
 
-async function updateFromGithub(id){
-  try {
-    toast('🔄 جارٍ التحديث من GitHub...');
-    await api(`/api/bots/${id}/update-from-github`, { method: 'POST' });
-    toast('✅ تم التحديث', 'ok');
-    await loadBots();
-  } catch(e){ toast('فشل: ' + e.message, 'err'); }
+// ═══════════════ UPLOAD ═══════════════
+function switchUploadTab(which){
+  $('utab-files').classList.toggle('active', which === 'files');
+  $('utab-github').classList.toggle('active', which === 'github');
+  $('panel-files').classList.toggle('hidden', which !== 'files');
+  $('panel-github').classList.toggle('hidden', which !== 'github');
 }
 
-// ═══════════════ UPLOAD ═══════════════
-function openUpload(){
+function onFilePicked(which){
+  const f = $('f-' + which).files[0];
+  if (!f) return;
+  if (which === 'main') uploadState.main = f;
+  if (which === 'req') uploadState.req = f;
+  const zone = $('drop-' + which);
+  const text = $('drop-' + which + '-text');
+  zone.classList.add('has');
+  text.textContent = `📎 ${f.name} (${(f.size/1024).toFixed(1)} KB)`;
+  if (which === 'main' && !$('up-name').value){
+    $('up-name').value = f.name.replace(/\.[^.]+$/, '');
+  }
+}
+
+function onFilesPicked(){
+  const files = Array.from($('f-extra').files || []);
+  if (!files.length) return;
+  uploadState.extras = files;
+  $('drop-extra').classList.add('has');
+  $('drop-extra-text').textContent = `📎 ${files.length} ملف`;
+  $('extras-list').innerHTML = files.map(f =>
+    `<div class="file-badge"><span>📄 ${escapeHtml(f.name)}</span><span style="color:var(--muted2)">${(f.size/1024).toFixed(1)} KB</span></div>`
+  ).join('');
+}
+
+async function submitUpload(){
+  const isGithub = !$('panel-github').classList.contains('hidden');
+
+  const btn = $('upload-submit');
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span>';
+
+  try {
+    if (isGithub){
+      const name = $('gh-name').value.trim();
+      const url = $('gh-url').value.trim();
+      const branch = $('gh-branch').value.trim() || 'main';
+      if (!name) throw new Error('اسم البوت مطلوب');
+      if (!url) throw new Error('رابط المستودع مطلوب');
+      await api('/api/bots/import-github', {
+        method: 'POST',
+        body: JSON.stringify({ name, url, branch })
+      });
+      toast('✅ تم الاستيراد');
+    } else {
+      const name = $('up-name').value.trim();
+      if (!name) throw new Error('اسم البوت مطلوب');
+      if (!uploadState.main) throw new Error('ملف البوت مطلوب');
+
+      const fd = new FormData();
+      fd.append('name', name);
+      fd.append('main_file', uploadState.main);
+      if (uploadState.req) fd.append('requirements', uploadState.req);
+      uploadState.extras.forEach(f => fd.append('extras', f));
+
+      await api('/api/bots/upload-files', { method: 'POST', body: fd });
+      toast('✅ تم الرفع');
+    }
+
+    closeModal('upload-modal');
+    resetUpload();
+    await loadBots();
+  } catch(e){ toast('فشل: ' + e.message, 'err'); }
+  finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+}
+
+function resetUpload(){
   $('up-name').value = '';
   $('gh-name').value = '';
   $('gh-url').value = '';
   $('gh-branch').value = 'main';
   uploadState = { main: null, req: null, extras: [] };
-  resetDrop('main'); resetDrop('req'); resetDrop('extra');
+  ['main','req','extra'].forEach(w => {
+    $('drop-' + w).classList.remove('has');
+    $('drop-' + w + '-text').textContent = w === 'main' ? 'اسحب الملف أو اضغط للاختيار' : (w === 'req' ? 'اختياري — Python فقط' : 'اختياري — متعددة');
+  });
   $('extras-list').innerHTML = '';
-  switchUploadTab('files');
-  openModal('upload-modal');
-}
-
-function switchUploadTab(which){
-  $('utab-files').classList.toggle('active', which === 'files');
-  $('utab-github').classList.toggle('active', which === 'github');
-  $('upload-files-panel').classList.toggle('hidden', which !== 'files');
-  $('upload-github-panel').classList.toggle('hidden', which !== 'github');
-}
-
-function resetDrop(which){
-  const map = {
-    main:  { zone: 'drop-main',  text: 'drop-main-text',  def: 'اسحب الملف أو اضغط للاختيار' },
-    req:   { zone: 'drop-req',   text: 'drop-req-text',   def: 'اسحب الملف أو اضغط للاختيار' },
-    extra: { zone: 'drop-extra', text: 'drop-extra-text', def: 'اسحب الملفات أو اضغط للاختيار' }
-  };
-  const m = map[which];
-  $(m.zone).classList.remove('has-file');
-  $(m.text).textContent = m.def;
-}
-
-function onFilePicked(which){
-  const input = $('f-' + which);
-  const f = input.files[0];
-  if (!f) return;
-  if (which === 'main') uploadState.main = f;
-  if (which === 'req') uploadState.req = f;
-
-  const zone = $('drop-' + which);
-  const text = $('drop-' + which + '-text');
-  zone.classList.add('has-file');
-  text.textContent = `📎 ${f.name} (${(f.size/1024).toFixed(1)} KB)`;
-
-  if (!$('up-name').value && which === 'main'){
-    $('up-name').value = f.name.replace(/\.[^.]+$/, '');
-  }
-}
-
-function onFilesPicked(which){
-  const input = $('f-extra');
-  const files = Array.from(input.files || []);
-  if (!files.length) return;
-  uploadState.extras = files;
-
-  $('drop-extra').classList.add('has-file');
-  $('drop-extra-text').textContent = `📎 ${files.length} ملف`;
-
-  const list = $('extras-list');
-  list.innerHTML = files.map((f, i) => `
-    <div class="file-badge">
-      <span class="name">📄 ${escapeHtml(f.name)}</span>
-      <span style="color:var(--muted2);font-size:11px">${(f.size/1024).toFixed(1)} KB</span>
-    </div>
-  `).join('');
-}
-
-async function submitUploadFiles(){
-  const name = $('up-name').value.trim();
-  if (!name) return toast('اسم البوت مطلوب', 'err');
-  if (!uploadState.main) return toast('ملف البوت الرئيسي مطلوب', 'err');
-
-  const btn = $('upload-files-btn');
-  const oldText = btn.textContent;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loader"></span> جارٍ الرفع...';
-
-  const fd = new FormData();
-  fd.append('name', name);
-  fd.append('main_file', uploadState.main);
-  if (uploadState.req) fd.append('requirements', uploadState.req);
-  uploadState.extras.forEach(f => fd.append('extras', f));
-
-  try {
-    await api('/api/bots/upload-files', { method: 'POST', body: fd });
-    toast('✅ تم رفع البوت', 'ok');
-    closeModal('upload-modal');
-    await loadBots();
-  } catch(e){
-    toast('فشل: ' + e.message, 'err');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = oldText;
-  }
-}
-
-async function submitImportGithub(){
-  const name = $('gh-name').value.trim();
-  const url = $('gh-url').value.trim();
-  const branch = $('gh-branch').value.trim() || 'main';
-  if (!name) return toast('اسم البوت مطلوب', 'err');
-  if (!url) return toast('رابط المستودع مطلوب', 'err');
-
-  const btn = $('upload-gh-btn');
-  const oldText = btn.textContent;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="loader"></span> جارٍ الاستيراد...';
-
-  try {
-    await api('/api/bots/import-github', {
-      method: 'POST',
-      body: JSON.stringify({ name, url, branch })
-    });
-    toast('✅ تم الاستيراد', 'ok');
-    closeModal('upload-modal');
-    await loadBots();
-  } catch(e){
-    toast('فشل: ' + e.message, 'err');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = oldText;
-  }
 }
 
 // ═══════════════ LOGS ═══════════════
@@ -1014,13 +1061,12 @@ async function openLogs(id, name){
 
   try {
     const d = await api(`/api/bots/${id}/logs`);
-    (d.logs || []).forEach(l => appendLog(l));
+    (d.logs || []).forEach(appendLog);
   } catch(e){}
 
-  // stream
-  if (currentLogsAbort) currentLogsAbort.abort();
-  currentLogsAbort = new AbortController();
-  streamLogs(id, currentLogsAbort.signal);
+  if (logsAbort) logsAbort.abort();
+  logsAbort = new AbortController();
+  streamLogs(id, logsAbort.signal);
 }
 
 async function streamLogs(id, signal){
@@ -1053,16 +1099,15 @@ function appendLog(l){
   const box = $('logs-box');
   const div = document.createElement('div');
   div.className = 'log-line log-' + (l.type || 'out');
-  const time = l.ts ? new Date(l.ts).toLocaleTimeString('ar-EG', {hour12:false}) : '';
+  const time = l.ts ? new Date(l.ts).toLocaleTimeString('ar-EG', { hour12: false }) : '';
   div.textContent = `[${time}] ${l.line}`;
   box.appendChild(div);
   if (box.children.length > 800) box.removeChild(box.firstChild);
   box.scrollTop = box.scrollHeight;
 }
 
-function clearLogsView(){ $('logs-box').innerHTML = ''; }
 function closeLogs(){
-  if (currentLogsAbort){ currentLogsAbort.abort(); currentLogsAbort = null; }
+  if (logsAbort){ logsAbort.abort(); logsAbort = null; }
   closeModal('logs-modal');
 }
 
@@ -1079,7 +1124,7 @@ async function openEditor(id, name){
     editor = CodeMirror.fromTextArea($('code-area'), {
       lineNumbers: true,
       mode: 'python',
-      theme: localStorage.getItem('theme') === 'light' ? 'default' : 'material-darker',
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'material-darker' : 'default',
       matchBrackets: true,
       autoCloseBrackets: true,
       styleActiveLine: true,
@@ -1089,14 +1134,13 @@ async function openEditor(id, name){
       readOnly: true,
     });
   }
-
   openModal('editor-modal');
-  await loadFileTree(id);
+  await loadFileTree();
 }
 
-async function loadFileTree(id){
+async function loadFileTree(){
   try {
-    const d = await api(`/api/bots/${id}/files`);
+    const d = await api(`/api/bots/${currentBotId}/files`);
     const tree = $('file-tree');
     if (!d.files || !d.files.length){
       tree.innerHTML = '<div style="padding:20px;text-align:center;color:var(--muted2);font-size:12px">لا ملفات</div>';
@@ -1107,22 +1151,15 @@ async function loadFileTree(id){
       const name = f.path.replace(/\/$/, '').split('/').pop();
       const icon = isDir ? '📁' : fileIcon(name);
       return `<div class="file-item ${isDir ? 'dir' : ''}" data-path="${escapeHtml(f.path)}" ${isDir ? '' : `onclick="openFile('${escapeHtml(f.path)}')"`}>
-        <span class="icon">${icon}</span>
-        <span>${escapeHtml(name)}</span>
+        <span>${icon}</span><span>${escapeHtml(name)}</span>
       </div>`;
     }).join('');
-  } catch(e){
-    toast(e.message, 'err');
-  }
+  } catch(e){ toast(e.message, 'err'); }
 }
 
 function fileIcon(name){
   const ext = name.split('.').pop().toLowerCase();
-  return {
-    py: '🐍', php: '🐘', txt: '📄', md: '📝',
-    json: '⚙️', js: '📜', html: '🌐', css: '🎨',
-    env: '🔐', sh: '⚡'
-  }[ext] || '📄';
+  return { py:'🐍', php:'🐘', txt:'📄', md:'📝', json:'⚙️', js:'📜', html:'🌐', css:'🎨', env:'🔐' }[ext] || '📄';
 }
 
 async function openFile(path){
@@ -1134,8 +1171,7 @@ async function openFile(path){
     $('del-btn').disabled = false;
 
     const ext = path.split('.').pop().toLowerCase();
-    const mode = { py: 'python', php: 'php', js: 'javascript', json: 'javascript',
-                   html: 'xml', css: 'css', md: 'markdown' }[ext] || 'python';
+    const mode = { py:'python', php:'php', js:'javascript', json:'javascript', html:'xml', css:'css', md:'markdown' }[ext] || 'python';
     editor.setOption('mode', mode);
     editor.setValue(d.content);
     editor.setOption('readOnly', false);
@@ -1144,9 +1180,7 @@ async function openFile(path){
     document.querySelectorAll('.file-item').forEach(el => {
       el.classList.toggle('active', el.dataset.path === path);
     });
-  } catch(e){
-    toast(e.message, 'err');
-  }
+  } catch(e){ toast(e.message, 'err'); }
 }
 
 async function saveFile(){
@@ -1156,20 +1190,16 @@ async function saveFile(){
       method: 'PUT',
       body: JSON.stringify({ path: currentFilePath, content: editor.getValue() })
     });
-    toast('💾 تم الحفظ', 'ok');
-
-    // إعادة تشغيل تلقائية إن كان البوت يعمل
+    toast('💾 تم الحفظ');
     const b = bots.find(x => x.id === currentBotId);
     if (b && b.status === 'running'){
       try {
         await api(`/api/bots/${currentBotId}/restart`, { method: 'POST' });
-        toast('🔄 تم إعادة التشغيل', 'ok');
+        toast('🔄 تم إعادة التشغيل');
         await loadBots();
       } catch {}
     }
-  } catch(e){
-    toast(e.message, 'err');
-  }
+  } catch(e){ toast(e.message, 'err'); }
 }
 
 async function newFile(){
@@ -1180,15 +1210,13 @@ async function newFile(){
       method: 'POST',
       body: JSON.stringify({ path: path.trim(), is_dir: false })
     });
-    toast('✅ تم الإنشاء', 'ok');
-    await loadFileTree(currentBotId);
+    toast('✅ تم الإنشاء');
+    await loadFileTree();
     openFile(path.trim());
-  } catch(e){
-    toast(e.message, 'err');
-  }
+  } catch(e){ toast(e.message, 'err'); }
 }
 
-function deleteCurrentFile(){
+function deleteFile(){
   if (!currentFilePath) return;
   $('confirm-title').textContent = 'حذف الملف';
   $('confirm-text').textContent = `سيتم حذف "${currentFilePath}" نهائياً. متأكد؟`;
@@ -1196,30 +1224,26 @@ function deleteCurrentFile(){
     try {
       await api(`/api/bots/${currentBotId}/file?path=${encodeURIComponent(currentFilePath)}`, { method: 'DELETE' });
       closeModal('confirm-modal');
-      toast('🗑 تم الحذف', 'ok');
+      toast('🗑 تم الحذف');
       currentFilePath = null;
       $('editor-path').textContent = 'اختر ملفاً';
       editor.setValue('');
       editor.setOption('readOnly', true);
       $('save-btn').disabled = true;
       $('del-btn').disabled = true;
-      await loadFileTree(currentBotId);
-    } catch(e){
-      toast(e.message, 'err');
-    }
+      await loadFileTree();
+    } catch(e){ toast(e.message, 'err'); }
   };
   openModal('confirm-modal');
 }
 
-async function restartBotFromEditor(){
+async function restartBot(){
   if (!currentBotId) return;
   try {
     await api(`/api/bots/${currentBotId}/restart`, { method: 'POST' });
-    toast('🔄 تم إعادة التشغيل', 'ok');
+    toast('🔄 تم إعادة التشغيل');
     await loadBots();
-  } catch(e){
-    toast(e.message, 'err');
-  }
+  } catch(e){ toast(e.message, 'err'); }
 }
 
 function closeEditor(){
@@ -1230,31 +1254,28 @@ function closeEditor(){
 
 // ═══════════════ INIT ═══════════════
 (async function init(){
-  // انتظر تحميل CodeMirror
   await new Promise(r => {
-    if (typeof CodeMirror !== 'undefined') r();
-    else {
-      const i = setInterval(() => {
-        if (typeof CodeMirror !== 'undefined'){ clearInterval(i); r(); }
-      }, 100);
-      setTimeout(() => { clearInterval(i); r(); }, 3000);
-    }
+    if (typeof CodeMirror !== 'undefined') return r();
+    const i = setInterval(() => { if (typeof CodeMirror !== 'undefined'){ clearInterval(i); r(); } }, 100);
+    setTimeout(() => { clearInterval(i); r(); }, 3000);
   });
+
+  // Register service worker (PWA)
+  if ('serviceWorker' in navigator){
+    try { await navigator.serviceWorker.register('/sw.js'); } catch(e){}
+  }
 
   const ok = await checkAuth();
   if (ok) enterApp();
-  else $('auth-screen').style.display = 'flex';
+  else { $('auth-screen').style.display = 'flex'; }
 
-  // keyboard shortcuts
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape'){
-      if ($('upload-modal').classList.contains('show')) closeModal('upload-modal');
-      else if ($('logs-modal').classList.contains('show')) closeLogs();
-      else if ($('editor-modal').classList.contains('show')) closeEditor();
-      else if ($('confirm-modal').classList.contains('show')) closeModal('confirm-modal');
+      document.querySelectorAll('.modal-bg.show').forEach(m => m.classList.remove('show'));
+      if (logsAbort){ logsAbort.abort(); logsAbort = null; }
     }
-    if ((e.ctrlKey || e.metaKey) && e.key === 's'){
-      if (currentFilePath){ e.preventDefault(); saveFile(); }
+    if ((e.ctrlKey || e.metaKey) && e.key === 's' && currentFilePath){
+      e.preventDefault(); saveFile();
     }
   });
 })();
