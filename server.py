@@ -1,10 +1,9 @@
 # language: Python 3.11+, file: server.py
-# Bot Hosting Platform — no email verification
+# Bot Hosting Platform — full + PWA
 # Made By @SUNIOxRICH | @Firstoget (Code Stride)
 
 import os
 import re
-import io
 import json
 import uuid
 import sqlite3
@@ -15,15 +14,13 @@ import hashlib
 import zipfile
 import shutil
 import sys
-import random
-import string
 import urllib.request
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Form, Request, status
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import jwt
@@ -102,10 +99,8 @@ def init_db():
             content TEXT NOT NULL,
             ts TEXT NOT NULL
         );
-        CREATE INDEX IF NOT EXISTS idx_hist_bot ON file_history(bot_id, id DESC);
         """)
 
-        # migrations — أعمدة جديدة لو الجدول قديم
         ucols = [r["name"] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
         for col, ddl in [
             ("is_admin", "ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0"),
@@ -234,7 +229,7 @@ def register(p: RegisterPayload):
     if len(p.password) < 8:
         raise HTTPException(400, "كلمة المرور 8 أحرف على الأقل")
     if not re.search(r"[A-Za-z]", p.password) or not re.search(r"\d", p.password):
-        raise HTTPException(400, "كلمة المرور يجب أن تحتوي حرفاً ورقماً على الأقل")
+        raise HTTPException(400, "كلمة المرور يجب أن تحتوي حرفاً ورقماً")
 
     with db() as conn:
         if conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone():
@@ -402,7 +397,7 @@ async def upload_files(
         main_name = Path(main_file.filename).name
         main_content = await main_file.read()
         if len(main_content) > MAX_UPLOAD_MB * 1024 * 1024:
-            raise HTTPException(400, "الملف الرئيسي كبير جداً")
+            raise HTTPException(400, "الملف كبير جداً")
         (bot_dir / main_name).write_bytes(main_content)
 
         if requirements and requirements.filename:
@@ -484,7 +479,7 @@ async def import_github(p: GitHubImport, user: dict = Depends(get_current_user))
     entry = find_entry_file(bot_dir)
     if not entry:
         shutil.rmtree(bot_dir, ignore_errors=True)
-        raise HTTPException(400, "لم يُعثر على ملف .py أو .php في المستودع")
+        raise HTTPException(400, "لم يُعثر على ملف .py أو .php")
     bot_type = detect_bot_type(entry)
     if not bot_type:
         shutil.rmtree(bot_dir, ignore_errors=True)
@@ -508,10 +503,10 @@ async def update_from_github(bot_id: str, user: dict = Depends(get_current_user)
         row = conn.execute("SELECT * FROM bots WHERE id = ? AND user_id = ?", (bot_id, user["id"])).fetchone()
     if not row: raise HTTPException(404, "غير موجود")
     if row["source"] != "github" or not row["github_url"]:
-        raise HTTPException(400, "هذا البوت لم يُستورد من GitHub")
+        raise HTTPException(400, "لم يُستورد من GitHub")
 
     m = re.match(r"^https?://github\.com/([^/]+)/([^/]+?)(?:\.git)?/?$", row["github_url"])
-    if not m: raise HTTPException(400, "رابط GitHub غير صالح")
+    if not m: raise HTTPException(400, "رابط غير صالح")
     owner, repo = m.group(1), m.group(2)
     branch = row["github_branch"] or "main"
 
@@ -577,7 +572,7 @@ def delete_bot(bot_id: str, user: dict = Depends(get_current_user)):
 
 
 # ============================================================
-# START / STOP / LOGS
+# START / STOP
 # ============================================================
 @app.post("/api/bots/{bot_id}/start")
 def start_bot(bot_id: str, user: dict = Depends(get_current_user)):
@@ -658,6 +653,9 @@ def restart_bot(bot_id: str, user: dict = Depends(get_current_user)):
     return start_bot(bot_id, user)
 
 
+# ============================================================
+# LOGS
+# ============================================================
 @app.get("/api/bots/{bot_id}/logs")
 def get_logs(bot_id: str, since: int = 0, user: dict = Depends(get_current_user)):
     with db() as conn:
@@ -738,7 +736,7 @@ def read_file(bot_id: str, path: str, user: dict = Depends(get_current_user)):
     if not fp.exists() or not fp.is_file():
         raise HTTPException(404, "الملف غير موجود")
     if fp.stat().st_size > 2 * 1024 * 1024:
-        raise HTTPException(400, "الملف كبير جداً (2 MB)")
+        raise HTTPException(400, "الملف كبير جداً")
     try:
         content = fp.read_text(encoding="utf-8", errors="replace")
     except Exception as e:
@@ -793,6 +791,84 @@ def delete_file(bot_id: str, path: str, user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(400, f"فشل الحذف: {e}")
     return {"ok": True}
+
+
+# ============================================================
+# PWA ENDPOINTS
+# ============================================================
+@app.get("/manifest.json")
+def manifest():
+    return Response(content=json.dumps({
+        "name": "منصة استضافة البوتات",
+        "short_name": "Bot Hoster",
+        "description": "استضف بوتات Python و PHP",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#080b14",
+        "theme_color": "#a855f7",
+        "orientation": "portrait-primary",
+        "dir": "rtl",
+        "lang": "ar",
+        "icons": [
+            {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any"},
+            {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable"}
+        ]
+    }, ensure_ascii=False), media_type="application/manifest+json")
+
+
+@app.get("/icon.svg")
+def icon():
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs>
+<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#a855f7"/>
+<stop offset="100%" stop-color="#06b6d4"/>
+</linearGradient>
+</defs>
+<rect width="512" height="512" rx="112" fill="url(#g)"/>
+<text x="256" y="330" font-size="256" text-anchor="middle" font-family="Segoe UI Emoji,Apple Color Emoji,sans-serif">🤖</text>
+</svg>'''
+    return Response(content=svg, media_type="image/svg+xml")
+
+
+@app.get("/sw.js")
+def service_worker():
+    js = '''// Service Worker — Bot Hoster PWA
+const CACHE = 'bothoster-v1';
+const ASSETS = ['/', '/icon.svg', '/manifest.json'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(()=>{}));
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys =>
+    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+  ));
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  // لا تخزّن طلبات API
+  if (url.pathname.startsWith('/api/')) return;
+
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      const fetchPromise = fetch(e.request).then(res => {
+        if (res.ok && e.request.method === 'GET') {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone)).catch(()=>{});
+        }
+        return res;
+      }).catch(() => cached);
+      return cached || fetchPromise;
+    })
+  );
+});
+'''
+    return Response(content=js, media_type="application/javascript")
 
 
 # ============================================================
