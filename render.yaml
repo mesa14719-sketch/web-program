@@ -1,14 +1,13 @@
 services:
   - type: web
     name: bot-hoster
-    env: python
+    env: docker          # ← غيّرها من python إلى docker
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./Dockerfile
     envVars:
-      - key: JWT_SECRET
-        generateValue: true
       - key: ADMIN_EMAIL
         value: geniralbrahim15@gmail.com
+      - key: JWT_SECRET
+        generateValue: true
       - key: PYTHON_VERSION
         value: 3.11.9
