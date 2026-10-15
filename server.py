@@ -1,11 +1,12 @@
 # language: Python 3.11+, file: server.py
-# Bot Hosting Platform — full + PWA
+# Bot Hosting Platform — with Webhook support
 # Made By @SUNIOxRICH | @Firstoget (Code Stride)
 
 import os
 import re
 import json
 import uuid
+import socket
 import sqlite3
 import asyncio
 import subprocess
@@ -15,6 +16,7 @@ import zipfile
 import shutil
 import sys
 import urllib.request
+import urllib.parse
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional
@@ -44,9 +46,13 @@ JWT_ALGO     = "HS256"
 JWT_EXP_DAYS = 7
 
 ADMIN_EMAIL  = os.environ.get("ADMIN_EMAIL", "admin@local").lower().strip()
+PUBLIC_URL   = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/")
 
 MAX_UPLOAD_MB = 50
 MAX_BOTS_PER_USER = 20
+
+PORT_START = 9100
+PORT_END   = 9999
 
 # ============================================================
 # DATABASE
@@ -82,6 +88,10 @@ def init_db():
             source TEXT DEFAULT 'upload',
             github_url TEXT,
             github_branch TEXT,
+            token TEXT,
+            port INTEGER,
+            webhook_url TEXT,
+            webhook_set_at TEXT,
             FOREIGN KEY (user_id) REFERENCES users(id)
         );
         CREATE TABLE IF NOT EXISTS logs (
@@ -115,6 +125,10 @@ def init_db():
             ("source", "ALTER TABLE bots ADD COLUMN source TEXT DEFAULT 'upload'"),
             ("github_url", "ALTER TABLE bots ADD COLUMN github_url TEXT"),
             ("github_branch", "ALTER TABLE bots ADD COLUMN github_branch TEXT"),
+            ("token", "ALTER TABLE bots ADD COLUMN token TEXT"),
+            ("port", "ALTER TABLE bots ADD COLUMN port INTEGER"),
+            ("webhook_url", "ALTER TABLE bots ADD COLUMN webhook_url TEXT"),
+            ("webhook_set_at", "ALTER TABLE bots ADD COLUMN webhook_set_at TEXT"),
         ]:
             if col not in bcols:
                 try: conn.execute(ddl)
@@ -265,12 +279,142 @@ def me(user: dict = Depends(get_current_user)):
 
 
 # ============================================================
+# TOKEN DETECTION
+# ============================================================
+TOKEN_RE = re.compile(r'\b(\d{8,12}:[A-Za-z0-9_\-]{30,50})\b')
+TEXT_EXTS = {'.php', '.py', '.js', '.json', '.txt', '.env', '.ini', '.yaml', '.yml', '.cfg', '.conf', '.sh'}
+MAX_FILE_SIZE = 500 * 1024
+
+
+def detect_bot_token(bot_dir: Path) -> Optional[str]:
+    """يفحص ملفات البوت ويكتشف توكن تلجرام."""
+    if not bot_dir.exists():
+        return None
+
+    # أولوية للملفات المشبوهة
+    priority_files = []
+    other_files = []
+
+    for f in bot_dir.rglob('*'):
+        if not f.is_file(): continue
+        if f.stat().st_size > MAX_FILE_SIZE: continue
+        name = f.name.lower()
+        is_text = f.suffix.lower() in TEXT_EXTS or name == '.env'
+
+        if not is_text: continue
+
+        if re.search(r'(config|settings|token|env|bot|secret)', name):
+            priority_files.append(f)
+        else:
+            other_files.append(f)
+
+    candidates = priority_files + other_files
+
+    for f in candidates:
+        try:
+            content = f.read_text(encoding='utf-8', errors='ignore')
+        except Exception:
+            continue
+
+        # ابحث عن توكن بس ياق
+        for m in TOKEN_RE.finditer(content):
+            token = m.group(1)
+            start = max(0, m.start() - 80)
+            context = content[start:m.start()]
+            if re.search(r'(token|TOKEN|bot_token|BOT_TOKEN|api_token|apiToken|key|KEY|secret|SECRET)\s*[:=]', context):
+                return token
+
+    # إذا لم نجد بشياق، خذ أول توكن صالح
+    for f in candidates:
+        try:
+            content = f.read_text(encoding='utf-8', errors='ignore')
+        except Exception:
+            continue
+        m = TOKEN_RE.search(content)
+        if m:
+            return m.group(1)
+
+    return None
+
+
+# ============================================================
+# TELEGRAM API
+# ============================================================
+def tg_api_call(token: str, method: str, params: dict = None) -> Optional[dict]:
+    """استدعاء API تلجرام."""
+    try:
+        url = f"https://api.telegram.org/bot{token}/{method}"
+        if params:
+            url += "?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.loads(r.read().decode())
+            return data
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def validate_telegram_token(token: str) -> Optional[dict]:
+    data = tg_api_call(token, "getMe")
+    if data and data.get("ok"):
+        return data.get("result")
+    return None
+
+
+def set_telegram_webhook(token: str, webhook_url: str) -> tuple:
+    try:
+        data = tg_api_call(token, "setWebhook", {
+            "url": webhook_url,
+            "drop_pending_updates": "false",
+            "max_connections": "40",
+        })
+        if data and data.get("ok"):
+            return True, "تم تفعيل Webhook"
+        return False, (data or {}).get("description", "فشل غير معروف")
+    except Exception as e:
+        return False, str(e)
+
+
+def remove_telegram_webhook(token: str) -> tuple:
+    try:
+        data = tg_api_call(token, "deleteWebhook", {"drop_pending_updates": "false"})
+        if data and data.get("ok"):
+            return True, "تم إزالة Webhook"
+        return False, (data or {}).get("description", "فشل")
+    except Exception as e:
+        return False, str(e)
+
+
+def get_webhook_info(token: str) -> Optional[dict]:
+    data = tg_api_call(token, "getWebhookInfo")
+    if data and data.get("ok"):
+        return data.get("result")
+    return None
+
+
+# ============================================================
 # HELPERS
 # ============================================================
 def detect_bot_type(entry_file: str) -> Optional[str]:
     lf = entry_file.lower()
     if lf.endswith(".py"): return "python"
     if lf.endswith(".php"): return "php"
+    return None
+
+
+def find_free_port() -> Optional[int]:
+    with db() as conn:
+        used = {r["port"] for r in conn.execute("SELECT port FROM bots WHERE port IS NOT NULL").fetchall()}
+    for p in range(PORT_START, PORT_END + 1):
+        if p in used: continue
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            s.bind(('127.0.0.1', p))
+            s.close()
+            return p
+        except OSError:
+            s.close()
+            continue
     return None
 
 
@@ -288,7 +432,7 @@ def bot_log(bot_id: str, type_: str, line: str):
 
 
 def find_entry_file(bot_dir: Path) -> Optional[str]:
-    priority = ["bot.py", "main.py", "app.py", "index.py", "index.php", "bot.php"]
+    priority = ["bot.py", "main.py", "app.py", "index.py", "index.php", "bot.php", "webhook.php"]
     all_files = []
     for f in bot_dir.rglob("*"):
         if f.is_file():
@@ -365,7 +509,8 @@ def _download_file(url: str, dest: Path):
 def list_bots(user: dict = Depends(get_current_user)):
     with db() as conn:
         rows = conn.execute(
-            "SELECT id, name, type, entry_file, status, created_at, last_start, source, github_url "
+            "SELECT id, name, type, entry_file, status, created_at, last_start, source, github_url, "
+            "token, port, webhook_url, webhook_set_at "
             "FROM bots WHERE user_id = ? ORDER BY created_at DESC",
             (user["id"],)
         ).fetchall()
@@ -431,15 +576,18 @@ async def upload_files(
         shutil.rmtree(bot_dir, ignore_errors=True)
         raise HTTPException(400, f"فشل: {e}")
 
+    # اكتشف التوكن
+    token = detect_bot_token(bot_dir)
+
     with db() as conn:
         conn.execute(
-            "INSERT INTO bots (id, user_id, name, type, entry_file, status, created_at, source) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, 'upload')",
-            (bot_id, user["id"], name, bot_type, entry, "stopped", datetime.utcnow().isoformat())
+            "INSERT INTO bots (id, user_id, name, type, entry_file, status, created_at, source, token) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 'upload', ?)",
+            (bot_id, user["id"], name, bot_type, entry, "stopped", datetime.utcnow().isoformat(), token)
         )
 
     await asyncio.to_thread(install_requirements, bot_dir, bot_id)
-    return {"ok": True, "id": bot_id, "type": bot_type, "entry_file": entry}
+    return {"ok": True, "id": bot_id, "type": bot_type, "entry_file": entry, "token": token}
 
 
 @app.post("/api/bots/import-github")
@@ -485,16 +633,18 @@ async def import_github(p: GitHubImport, user: dict = Depends(get_current_user))
         shutil.rmtree(bot_dir, ignore_errors=True)
         raise HTTPException(400, "نوع غير مدعوم")
 
+    token = detect_bot_token(bot_dir)
+
     with db() as conn:
         conn.execute(
-            "INSERT INTO bots (id, user_id, name, type, entry_file, status, created_at, source, github_url, github_branch) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, 'github', ?, ?)",
+            "INSERT INTO bots (id, user_id, name, type, entry_file, status, created_at, source, github_url, github_branch, token) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, 'github', ?, ?, ?)",
             (bot_id, user["id"], name, bot_type, entry, "stopped",
-             datetime.utcnow().isoformat(), p.url.strip(), branch)
+             datetime.utcnow().isoformat(), p.url.strip(), branch, token)
         )
 
     await asyncio.to_thread(install_requirements, bot_dir, bot_id)
-    return {"ok": True, "id": bot_id, "type": bot_type, "entry_file": entry}
+    return {"ok": True, "id": bot_id, "type": bot_type, "entry_file": entry, "token": token}
 
 
 @app.post("/api/bots/{bot_id}/update-from-github")
@@ -535,13 +685,18 @@ async def update_from_github(bot_id: str, user: dict = Depends(get_current_user)
     if bot_dir.exists(): shutil.rmtree(bot_dir)
     new_dir.rename(bot_dir)
 
+    new_token = detect_bot_token(bot_dir)
+
     bot_log(bot_id, "sys", "[update] تم التحديث من GitHub")
     await asyncio.to_thread(install_requirements, bot_dir, bot_id)
 
     with db() as conn:
-        conn.execute("UPDATE bots SET status='stopped', pid=NULL WHERE id=?", (bot_id,))
+        if new_token:
+            conn.execute("UPDATE bots SET status='stopped', pid=NULL, token=? WHERE id=?", (new_token, bot_id))
+        else:
+            conn.execute("UPDATE bots SET status='stopped', pid=NULL WHERE id=?", (bot_id,))
 
-    return {"ok": True}
+    return {"ok": True, "token": new_token}
 
 
 @app.post("/api/bots/{bot_id}/rename")
@@ -558,8 +713,12 @@ def rename_bot(bot_id: str, p: RenamePayload, user: dict = Depends(get_current_u
 @app.delete("/api/bots/{bot_id}")
 def delete_bot(bot_id: str, user: dict = Depends(get_current_user)):
     with db() as conn:
-        if not conn.execute("SELECT id FROM bots WHERE id = ? AND user_id = ?", (bot_id, user["id"])).fetchone():
+        row = conn.execute("SELECT id, token FROM bots WHERE id = ? AND user_id = ?", (bot_id, user["id"])).fetchone()
+        if not row:
             raise HTTPException(404, "غير موجود")
+        if row["token"]:
+            try: remove_telegram_webhook(row["token"])
+            except Exception: pass
         conn.execute("DELETE FROM bots WHERE id = ?", (bot_id,))
         conn.execute("DELETE FROM logs WHERE bot_id = ?", (bot_id,))
         conn.execute("DELETE FROM file_history WHERE bot_id = ?", (bot_id,))
@@ -582,14 +741,26 @@ def start_bot(bot_id: str, user: dict = Depends(get_current_user)):
 
     existing = PROCS.get(bot_id)
     if existing and existing.poll() is None:
-        return {"ok": True, "pid": existing.pid}
+        return {"ok": True, "pid": existing.pid, "port": row["port"]}
 
     bot_dir = BOTS_DIR / bot_id
     entry = bot_dir / row["entry_file"]
     if not entry.exists():
         raise HTTPException(400, f"ملف الدخول مفقود: {row['entry_file']}")
 
-    cmd = [sys.executable, "-u", str(entry)] if row["type"] == "python" else ["php", str(entry)]
+    port = None
+
+    if row["type"] == "python":
+        cmd = [sys.executable, "-u", str(entry)]
+    elif row["type"] == "php":
+        port = row["port"] or find_free_port()
+        if not port:
+            raise HTTPException(500, "لا يوجد منفذ متاح")
+        # ابدأ خادم PHP الداخلي
+        cmd = ["php", "-S", f"127.0.0.1:{port}", "-t", str(bot_dir), str(entry)]
+    else:
+        raise HTTPException(400, "نوع غير مدعوم")
+
     try:
         proc = subprocess.Popen(cmd, cwd=str(bot_dir),
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
@@ -599,10 +770,36 @@ def start_bot(bot_id: str, user: dict = Depends(get_current_user)):
 
     PROCS[bot_id] = proc
     with db() as conn:
-        conn.execute("UPDATE bots SET status='running', pid=?, last_start=? WHERE id=?",
-                     (proc.pid, datetime.utcnow().isoformat(), bot_id))
+        if port:
+            conn.execute("UPDATE bots SET status='running', pid=?, last_start=?, port=? WHERE id=?",
+                         (proc.pid, datetime.utcnow().isoformat(), port, bot_id))
+        else:
+            conn.execute("UPDATE bots SET status='running', pid=?, last_start=? WHERE id=?",
+                         (proc.pid, datetime.utcnow().isoformat(), bot_id))
+
+    bot_log(bot_id, "sys", f"[started] pid={proc.pid}" + (f" port={port}" if port else ""))
+
     asyncio.create_task(_stream_output(bot_id, proc))
-    return {"ok": True, "pid": proc.pid}
+
+    # إذا كان بوت PHP وله توكن — فعّل webhook تلقائياً
+    if row["type"] == "php" and row["token"] and PUBLIC_URL:
+        webhook_url = f"{PUBLIC_URL}/hook/{bot_id}"
+        asyncio.create_task(_auto_set_webhook(bot_id, row["token"], webhook_url))
+
+    return {"ok": True, "pid": proc.pid, "port": port}
+
+
+async def _auto_set_webhook(bot_id: str, token: str, webhook_url: str):
+    """يفعّل Webhook في الخلفية بعد التشغيل."""
+    await asyncio.sleep(2)  # انتظر الخادم الداخلي يبدأ
+    ok, msg = set_telegram_webhook(token, webhook_url)
+    if ok:
+        bot_log(bot_id, "sys", f"[webhook] ✅ مفعّل: {webhook_url}")
+        with db() as conn:
+            conn.execute("UPDATE bots SET webhook_url=?, webhook_set_at=? WHERE id=?",
+                         (webhook_url, datetime.utcnow().isoformat(), bot_id))
+    else:
+        bot_log(bot_id, "err", f"[webhook] ❌ فشل: {msg}")
 
 
 async def _stream_output(bot_id: str, proc: subprocess.Popen):
@@ -651,6 +848,94 @@ def restart_bot(bot_id: str, user: dict = Depends(get_current_user)):
     stop_bot(bot_id, user)
     import time as _t; _t.sleep(0.5)
     return start_bot(bot_id, user)
+
+
+# ============================================================
+# WEBHOOK ROUTES
+# ============================================================
+@app.post("/api/bots/{bot_id}/set-webhook")
+async def api_set_webhook(bot_id: str, user: dict = Depends(get_current_user)):
+    with db() as conn:
+        row = conn.execute("SELECT * FROM bots WHERE id = ? AND user_id = ?", (bot_id, user["id"])).fetchone()
+    if not row: raise HTTPException(404, "غير موجود")
+    if not row["token"]:
+        raise HTTPException(400, "لم يُعثر على توكن — أضف التوكن في ملفات البوت أو ارفعه يدوياً")
+    if not PUBLIC_URL:
+        raise HTTPException(400, "PUBLIC_URL غير مضبوط على السيرفر (RENDER_EXTERNAL_URL)")
+
+    webhook_url = f"{PUBLIC_URL}/hook/{bot_id}"
+    ok, msg = set_telegram_webhook(row["token"], webhook_url)
+    if ok:
+        with db() as conn:
+            conn.execute("UPDATE bots SET webhook_url=?, webhook_set_at=? WHERE id=?",
+                         (webhook_url, datetime.utcnow().isoformat(), bot_id))
+        bot_log(bot_id, "sys", f"[webhook] ✅ {webhook_url}")
+        return {"ok": True, "message": msg, "url": webhook_url}
+    raise HTTPException(400, msg)
+
+
+@app.post("/api/bots/{bot_id}/remove-webhook")
+async def api_remove_webhook(bot_id: str, user: dict = Depends(get_current_user)):
+    with db() as conn:
+        row = conn.execute("SELECT * FROM bots WHERE id = ? AND user_id = ?", (bot_id, user["id"])).fetchone()
+    if not row: raise HTTPException(404, "غير موجود")
+    if not row["token"]:
+        raise HTTPException(400, "لا يوجد توكن")
+
+    ok, msg = remove_telegram_webhook(row["token"])
+    if ok:
+        with db() as conn:
+            conn.execute("UPDATE bots SET webhook_url=NULL, webhook_set_at=NULL WHERE id=?", (bot_id,))
+        bot_log(bot_id, "sys", "[webhook] تم الإزالة")
+        return {"ok": True, "message": msg}
+    raise HTTPException(400, msg)
+
+
+@app.get("/api/bots/{bot_id}/webhook-info")
+async def api_webhook_info(bot_id: str, user: dict = Depends(get_current_user)):
+    with db() as conn:
+        row = conn.execute("SELECT * FROM bots WHERE id = ? AND user_id = ?", (bot_id, user["id"])).fetchone()
+    if not row: raise HTTPException(404, "غير موجود")
+    if not row["token"]:
+        raise HTTPException(400, "لا يوجد توكن")
+    info = get_webhook_info(row["token"])
+    return {"ok": True, "info": info}
+
+
+@app.post("/hook/{bot_id}")
+async def webhook_receiver(bot_id: str, request: Request):
+    """يستقبل تحديثات تلجرام لبوت PHP ويمررها للخادم الداخلي."""
+    with db() as conn:
+        row = conn.execute("SELECT * FROM bots WHERE id = ?", (bot_id,)).fetchone()
+    if not row:
+        raise HTTPException(404, "غير موجود")
+    if row["type"] != "php":
+        raise HTTPException(400, "webhook مخصص لبوتات PHP فقط")
+    if row["status"] != "running" or not row["port"]:
+        raise HTTPException(503, "البوت لا يعمل حالياً")
+
+    body = await request.body()
+    headers = dict(request.headers)
+
+    # مرر إلى الخادم الداخلي
+    internal_url = f"http://127.0.0.1:{row['port']}/"
+    try:
+        req = urllib.request.Request(internal_url, data=body, method="POST")
+        for k, v in headers.items():
+            if k.lower() in ('host', 'content-length'): continue
+            req.add_header(k, v)
+        req.add_header('Content-Type', 'application/json')
+
+        with urllib.request.urlopen(req, timeout=20) as r:
+            response_body = r.read()
+            response_code = r.status
+        return Response(content=response_body, status_code=response_code)
+    except urllib.error.HTTPError as e:
+        return Response(content=e.read(), status_code=e.code)
+    except Exception as e:
+        bot_log(bot_id, "err", f"[webhook] {e}")
+        return Response(content=json.dumps({"ok": False, "error": str(e)}),
+                       status_code=500, media_type="application/json")
 
 
 # ============================================================
@@ -764,6 +1049,13 @@ def write_file(bot_id: str, p: FileSave, user: dict = Depends(get_current_user))
     except Exception as e:
         raise HTTPException(400, f"فشل الحفظ: {e}")
     bot_log(bot_id, "sys", f"[edit] {p.path}")
+
+    # أعد اكتشاف التوكن عند التعديل
+    new_token = detect_bot_token(BOTS_DIR / bot_id)
+    if new_token:
+        with db() as conn:
+            conn.execute("UPDATE bots SET token=? WHERE id=?", (new_token, bot_id))
+
     return {"ok": True}
 
 
@@ -794,7 +1086,7 @@ def delete_file(bot_id: str, path: str, user: dict = Depends(get_current_user)):
 
 
 # ============================================================
-# PWA ENDPOINTS
+# PWA
 # ============================================================
 @app.get("/manifest.json")
 def manifest():
@@ -818,56 +1110,17 @@ def manifest():
 
 @app.get("/icon.svg")
 def icon():
-    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<defs>
-<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
-<stop offset="0%" stop-color="#a855f7"/>
-<stop offset="100%" stop-color="#06b6d4"/>
-</linearGradient>
-</defs>
-<rect width="512" height="512" rx="112" fill="url(#g)"/>
-<text x="256" y="330" font-size="256" text-anchor="middle" font-family="Segoe UI Emoji,Apple Color Emoji,sans-serif">🤖</text>
-</svg>'''
+    svg = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs><linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#a855f7"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs><rect width="512" height="512" rx="112" fill="url(#g)"/><text x="256" y="330" font-size="256" text-anchor="middle" font-family="sans-serif">🤖</text></svg>'''
     return Response(content=svg, media_type="image/svg+xml")
 
 
 @app.get("/sw.js")
 def service_worker():
-    js = '''// Service Worker — Bot Hoster PWA
-const CACHE = 'bothoster-v1';
-const ASSETS = ['/', '/icon.svg', '/manifest.json'];
-
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(()=>{}));
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', e => {
-  const url = new URL(e.request.url);
-  // لا تخزّن طلبات API
-  if (url.pathname.startsWith('/api/')) return;
-
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      const fetchPromise = fetch(e.request).then(res => {
-        if (res.ok && e.request.method === 'GET') {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone)).catch(()=>{});
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || fetchPromise;
-    })
-  );
-});
-'''
+    js = '''const CACHE='bothoster-v1';const ASSETS=['/','/icon.svg','/manifest.json'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).catch(()=>{}));self.skipWaiting();});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))));self.clients.claim();});
+self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(u.pathname.startsWith('/api/')||u.pathname.startsWith('/hook/'))return;
+e.respondWith(caches.match(e.request).then(c=>{const f=fetch(e.request).then(r=>{if(r.ok&&e.request.method==='GET'){const cl=r.clone();caches.open(CACHE).then(c2=>c2.put(e.request,cl)).catch(()=>{});}return r;}).catch(()=>c);return c||f;}));});'''
     return Response(content=js, media_type="application/javascript")
 
 
@@ -888,16 +1141,34 @@ def cron_resume():
         if not b: continue
         entry = bot_dir / b["entry_file"]
         if not entry.exists(): continue
-        cmd = [sys.executable, "-u", str(entry)] if b["type"] == "python" else ["php", str(entry)]
+
+        if b["type"] == "python":
+            cmd = [sys.executable, "-u", str(entry)]
+            port = None
+        elif b["type"] == "php":
+            port = b["port"] or find_free_port()
+            cmd = ["php", "-S", f"127.0.0.1:{port}", "-t", str(bot_dir), str(entry)]
+        else:
+            continue
+
         try:
             proc = subprocess.Popen(cmd, cwd=str(bot_dir),
                                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     text=True, bufsize=1)
             PROCS[bid] = proc
             with db() as conn:
-                conn.execute("UPDATE bots SET status='running', pid=?, last_start=? WHERE id=?",
-                             (proc.pid, datetime.utcnow().isoformat(), bid))
+                if port:
+                    conn.execute("UPDATE bots SET status='running', pid=?, last_start=?, port=? WHERE id=?",
+                                 (proc.pid, datetime.utcnow().isoformat(), port, bid))
+                else:
+                    conn.execute("UPDATE bots SET status='running', pid=?, last_start=? WHERE id=?",
+                                 (proc.pid, datetime.utcnow().isoformat(), bid))
             asyncio.create_task(_stream_output(bid, proc))
+
+            if b["type"] == "php" and b["token"] and PUBLIC_URL:
+                webhook_url = f"{PUBLIC_URL}/hook/{bid}"
+                asyncio.create_task(_auto_set_webhook(bid, b["token"], webhook_url))
+
             restarted.append(bid)
         except Exception as e:
             bot_log(bid, "err", f"[cron] {e}")
@@ -916,7 +1187,8 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"ok": True, "running": len([p for p in PROCS.values() if p.poll() is None])}
+    return {"ok": True, "running": len([p for p in PROCS.values() if p.poll() is None]),
+            "public_url": PUBLIC_URL or "(not set)"}
 
 
 if __name__ == "__main__":
