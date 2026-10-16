@@ -77,7 +77,6 @@ body::before{
 
 button{font-family:inherit;cursor:pointer;border:none;transition:.15s;background:none;color:inherit}
 input,textarea{font-family:inherit}
-
 .hidden{display:none!important}
 
 /* ═══════════════ AUTH ═══════════════ */
@@ -134,7 +133,6 @@ input,textarea{font-family:inherit}
   color:white;font-size:13px;font-weight:900;
 }
 .check-row .text{font-size:12px;line-height:1.5;color:var(--muted)}
-.check-row .text a{color:var(--accent);text-decoration:underline;cursor:pointer}
 
 .terms-box{
   background:var(--bg3);border:1px solid var(--border);
@@ -156,9 +154,19 @@ input,textarea{font-family:inherit}
 .btn-ghost{background:var(--card);border:1px solid var(--border);color:var(--text)}
 .btn-ghost:hover{background:var(--card-hover)}
 .btn-danger{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5}
-.btn-danger:hover{background:rgba(239,68,68,.25)}
 .btn-success{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac}
-.btn-success:hover{background:rgba(34,197,94,.25)}
+.btn-blue{background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;box-shadow:0 2px 8px rgba(59,130,246,.3)}
+.btn-blue:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(59,130,246,.4)}
+.btn-purple{background:linear-gradient(135deg,#a855f7,#8b5cf6);color:white;box-shadow:0 2px 8px rgba(168,85,247,.3)}
+.btn-purple:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(168,85,247,.4)}
+.btn-cyan{background:linear-gradient(135deg,#06b6d4,#0891b2);color:white;box-shadow:0 2px 8px rgba(6,182,212,.3)}
+.btn-cyan:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(6,182,212,.4)}
+.btn-orange{background:linear-gradient(135deg,#f97316,#ea580c);color:white;box-shadow:0 2px 8px rgba(249,115,22,.3)}
+.btn-orange:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(249,115,22,.4)}
+.btn-green{background:linear-gradient(135deg,#22c55e,#16a34a);color:white;box-shadow:0 2px 8px rgba(34,197,94,.3)}
+.btn-green:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(34,197,94,.4)}
+.btn-red{background:linear-gradient(135deg,#ef4444,#dc2626);color:white;box-shadow:0 2px 8px rgba(239,68,68,.3)}
+.btn-red:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(239,68,68,.4)}
 .btn-sm{padding:7px 12px;font-size:12px;border-radius:9px}
 .btn-icon{padding:9px;width:38px;height:38px;justify-content:center}
 
@@ -204,8 +212,6 @@ input,textarea{font-family:inherit}
 }
 
 .content{padding:24px;max-width:1300px;margin:0 auto}
-.content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px}
-.content-header h2{font-size:22px;font-weight:700}
 
 .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
 .stat-card{
@@ -275,17 +281,17 @@ input,textarea{font-family:inherit}
 }
 .bot-stats .stat{display:flex;align-items:center;gap:5px}
 .bot-stats .stat b{color:var(--text);font-family:monospace;font-size:11px}
+.bot-stats .wh-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:8px;font-size:10px;font-weight:700;
+}
+.bot-stats .wh-badge.on{background:rgba(251,191,36,.12);color:#fbbf24}
+.bot-stats .wh-badge.off{background:rgba(136,146,166,.12);color:var(--muted)}
 
 .bot-actions{display:flex;gap:6px;flex-wrap:wrap}
 .bot-actions button{
-  flex:1;min-width:60px;padding:8px 10px;font-size:11px;border-radius:9px;font-weight:600;
-  background:var(--bg3);border:1px solid var(--border);color:var(--text);
+  flex:1;min-width:60px;padding:9px 10px;font-size:11px;border-radius:9px;font-weight:700;
 }
-.bot-actions button:hover{background:var(--card-hover);border-color:var(--border2)}
-.bot-actions .btn-green{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.25);color:#4ade80}
-.bot-actions .btn-green:hover{background:rgba(34,197,94,.2)}
-.bot-actions .btn-red{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.25);color:#f87171}
-.bot-actions .btn-red:hover{background:rgba(239,68,68,.2)}
 
 .empty{
   text-align:center;padding:70px 20px;
@@ -345,6 +351,20 @@ input,textarea{font-family:inherit}
   border-radius:9px;margin-top:8px;font-size:12px;
 }
 
+/* Webhook status */
+.wh-status {
+  padding: 12px 14px; border-radius: 10px;
+  background: var(--bg3); border: 1px solid var(--border);
+  margin-bottom: 14px; font-size: 12px; font-family: monospace;
+  word-break: break-all;
+  direction: ltr; text-align: left;
+  line-height: 1.6;
+}
+.wh-status.ok { background: rgba(34,197,94,.08); border-color: rgba(34,197,94,.3); color: #6ee7b7; }
+.wh-status.err { background: rgba(239,68,68,.08); border-color: rgba(239,68,68,.3); color: #fca5a5; }
+.wh-status.info { background: rgba(6,182,212,.08); border-color: rgba(6,182,212,.3); color: #67e8f9; }
+
+/* Logs */
 .logs-box{
   background:#050810;border:1px solid var(--border);border-radius:11px;
   padding:14px;height:420px;overflow-y:auto;
@@ -356,6 +376,7 @@ input,textarea{font-family:inherit}
 .log-err{color:#f85149}
 .log-sys{color:#58a6ff}
 
+/* Editor */
 .editor-layout{display:grid;grid-template-columns:220px 1fr;gap:12px;height:500px}
 .file-tree{
   background:var(--bg3);border:1px solid var(--border);border-radius:11px;
@@ -380,6 +401,7 @@ input,textarea{font-family:inherit}
 
 .CodeMirror{height:calc(100% - 48px)!important;border-radius:11px;border:1px solid var(--border);font-size:13px}
 
+/* Toast */
 .toast{
   position:fixed;bottom:24px;left:50%;
   transform:translate(-50%,100px);
@@ -430,7 +452,6 @@ input,textarea{font-family:inherit}
       <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">حساب جديد</button>
     </div>
 
-    <!-- Login -->
     <div id="form-login">
       <div class="field">
         <label>البريد</label>
@@ -443,7 +464,6 @@ input,textarea{font-family:inherit}
       <button class="btn btn-primary btn-block" id="login-btn" onclick="doLogin()">دخول</button>
     </div>
 
-    <!-- Register -->
     <div id="form-register" class="hidden">
       <div class="field">
         <label>البريد الإلكتروني</label>
@@ -463,9 +483,9 @@ input,textarea{font-family:inherit}
       </div>
       <div class="terms-box">
         <h4>📜 الشروط والأحكام</h4>
-        باستخدامك للمنصة، أنت توافق على الالتزام بالقوانين المحلية والدولية. لا يُسمح باستخدام المنصة لأي نشاط غير قانوني أو لنشر محتوى ضار. تحتفظ المنصة بحق إيقاف أي حساب مخالف.
+        باستخدامك للمنصة، أنت توافق على الالتزام بالقوانين المحلية والدولية.
         <h4>🔒 سياسة الخصوصية</h4>
-        نجمع البريد الإلكتروني وكلمة المرور المشفرة والملفات التي ترفعها وسجلات تشغيلها. تُستخدم هذه البيانات فقط لتشغيل حسابك. لا نشاركها مع أي طرف ثالث. يمكنك حذف حسابك وكل بياناتك في أي وقت.
+        نجمع البريد وكلمة المرور المشفرة والملفات التي ترفعها.
         <h4>⚠️ المسؤولية</h4>
         أنت المسؤول الكامل عن محتوى البوتات التي ترفعها.
       </div>
@@ -588,7 +608,6 @@ input,textarea{font-family:inherit}
       <div class="field">
         <label>رابط المستودع</label>
         <input type="text" id="gh-url" placeholder="https://github.com/user/repo">
-        <div class="hint">يجب أن يكون المستودع عاماً</div>
       </div>
       <div class="field">
         <label>الفرع</label>
@@ -599,6 +618,30 @@ input,textarea{font-family:inherit}
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('upload-modal')">إلغاء</button>
       <button class="btn btn-primary" id="upload-submit" onclick="submitUpload()">رفع</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MODAL: WEBHOOK ═══════════════ -->
+<div class="modal-bg" id="webhook-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="wh-title">🪝 تفعيل Webhook</h3>
+      <button class="modal-close" onclick="closeModal('webhook-modal')">✕</button>
+    </div>
+
+    <div class="field">
+      <label>🔑 توكن البوت (من @BotFather)</label>
+      <input type="text" id="wh-token" placeholder="123456789:ABC-DEF..." style="font-family:monospace;direction:ltr;text-align:left">
+      <div class="hint">@BotFather → /mybots → API Token</div>
+    </div>
+
+    <div id="wh-result"></div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeModal('webhook-modal')">إغلاق</button>
+      <button class="btn btn-ghost" id="wh-remove-btn" onclick="removeWebhook()" style="color:#fca5a5">🗑 إزالة</button>
+      <button class="btn btn-primary" id="wh-set-btn" onclick="setWebhook()">✅ تفعيل</button>
     </div>
   </div>
 </div>
@@ -632,8 +675,8 @@ input,textarea{font-family:inherit}
           <span class="path" id="editor-path">اختر ملفاً</span>
           <div style="display:flex;gap:5px;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm" onclick="newFile()">+ ملف</button>
-            <button class="btn btn-success btn-sm" id="save-btn" onclick="saveFile()" disabled>💾 حفظ</button>
-            <button class="btn btn-danger btn-sm" id="del-btn" onclick="deleteFile()" disabled>🗑</button>
+            <button class="btn btn-green btn-sm" id="save-btn" onclick="saveFile()" disabled>💾 حفظ</button>
+            <button class="btn btn-red btn-sm" id="del-btn" onclick="deleteFile()" disabled>🗑</button>
             <button class="btn btn-ghost btn-sm" onclick="restartBot()">🔄 إعادة تشغيل</button>
           </div>
         </div>
@@ -653,7 +696,7 @@ input,textarea{font-family:inherit}
     <p id="confirm-text" style="color:var(--muted);font-size:14px;margin-bottom:18px"></p>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal('confirm-modal')">إلغاء</button>
-      <button class="btn btn-danger" id="confirm-yes">تأكيد</button>
+      <button class="btn btn-red" id="confirm-yes">تأكيد</button>
     </div>
   </div>
 </div>
@@ -668,6 +711,7 @@ let token = localStorage.getItem('token') || '';
 let currentUser = null;
 let bots = [];
 let currentBotId = null;
+let currentWebhookBotId = null;
 let logsAbort = null;
 let editor = null;
 let currentFilePath = null;
@@ -675,7 +719,6 @@ let uploadState = { main: null, req: null, extras: [] };
 let currentFilter = 'all';
 let currentSearch = '';
 
-// ═══════════════ HELPERS ═══════════════
 function escapeHtml(s){
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -711,7 +754,6 @@ async function api(path, opts={}){
 function openModal(id){ $(id).classList.add('show'); }
 function closeModal(id){ $(id).classList.remove('show'); }
 
-// ═══════════════ THEME ═══════════════
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   localStorage.setItem('theme', t);
@@ -724,7 +766,6 @@ function toggleTheme(){
 }
 applyTheme(localStorage.getItem('theme') || 'dark');
 
-// ═══════════════ AUTH ═══════════════
 function switchAuthTab(which){
   $('tab-login').classList.toggle('active', which === 'login');
   $('tab-register').classList.toggle('active', which === 'register');
@@ -842,7 +883,6 @@ async function checkAuth(){
   }
 }
 
-// ═══════════════ BOTS ═══════════════
 async function loadBots(){
   try {
     const d = await api('/api/bots');
@@ -882,7 +922,11 @@ function renderBots(){
     return;
   }
 
-  grid.innerHTML = filtered.map(b => `
+  grid.innerHTML = filtered.map(b => {
+    const isPHP = b.type === 'php';
+    const hasWebhook = !!b.webhook_url;
+
+    return `
     <div class="bot-card">
       <div class="bot-head">
         <div class="bot-avatar">${b.type === 'python' ? '🐍' : '🐘'}</div>
@@ -898,18 +942,20 @@ function renderBots(){
       <div class="bot-stats">
         <div class="stat">📅 <b>${new Date(b.created_at).toLocaleDateString('ar-EG')}</b></div>
         ${b.source === 'github' ? '<div class="stat">🐙 <b>GitHub</b></div>' : ''}
+        ${isPHP ? `<div class="wh-badge ${hasWebhook ? 'on' : 'off'}">🪝 ${hasWebhook ? 'Webhook مفعّل' : 'Webhook'}</div>` : ''}
       </div>
       <div class="bot-actions">
         ${b.status === 'running'
-          ? `<button class="btn-red" onclick="stopBot('${b.id}')">إيقاف</button>`
-          : `<button class="btn-green" onclick="startBot('${b.id}')">تشغيل</button>`}
-        <button onclick="openLogs('${b.id}', '${escapeHtml(b.name)}')">سجل</button>
-        <button onclick="openEditor('${b.id}', '${escapeHtml(b.name)}')">محرر</button>
-        ${b.source === 'github' ? `<button onclick="updateFromGithub('${b.id}')">🔄 تحديث</button>` : ''}
-        <button class="btn-red" onclick="confirmDelete('${b.id}', '${escapeHtml(b.name)}')">🗑</button>
+          ? `<button class="btn btn-red" onclick="stopBot('${b.id}')">⏹ إيقاف</button>`
+          : `<button class="btn btn-green" onclick="startBot('${b.id}')">▶️ تشغيل</button>`}
+        <button class="btn btn-purple" onclick="openLogs('${b.id}', '${escapeHtml(b.name)}')">📋 سجل</button>
+        <button class="btn btn-blue" onclick="openEditor('${b.id}', '${escapeHtml(b.name)}')">📝 محرر</button>
+        ${isPHP ? `<button class="btn btn-cyan" onclick="openWebhook('${b.id}', '${escapeHtml(b.name)}')">🪝 Webhook</button>` : ''}
+        ${b.source === 'github' ? `<button class="btn btn-cyan" onclick="updateFromGithub('${b.id}')">🔄 تحديث</button>` : ''}
+        <button class="btn btn-orange" onclick="confirmDelete('${b.id}', '${escapeHtml(b.name)}')">🗑 حذف</button>
       </div>
     </div>
-  `).join('');
+  `}).join('');
 }
 
 function setFilter(f, el){
@@ -961,7 +1007,88 @@ function confirmDelete(id, name){
   openModal('confirm-modal');
 }
 
-// ═══════════════ UPLOAD ═══════════════
+// ═══ Webhook ═══
+function openWebhook(botId, botName){
+  currentWebhookBotId = botId;
+  $('wh-token').value = '';
+  $('wh-result').innerHTML = '';
+  $('wh-title').textContent = '🪝 Webhook — ' + botName;
+  openModal('webhook-modal');
+  loadWebhookInfo(botId);
+}
+
+async function loadWebhookInfo(botId){
+  try {
+    const d = await api(`/api/bots/${botId}/webhook-info`);
+    const res = $('wh-result');
+    if (d.has_token && d.info){
+      const info = d.info;
+      if (info.url){
+        let html = `✅ <b>مفعّل حالياً</b><br>${escapeHtml(info.url)}`;
+        if (info.pending_update_count) html += `<br>⏳ تحديثات معلّقة: ${info.pending_update_count}`;
+        if (info.last_error_message) html += `<br>⚠️ خطأ سابق: ${escapeHtml(info.last_error_message)}`;
+        res.innerHTML = `<div class="wh-status ok">${html}</div>`;
+      } else {
+        res.innerHTML = `<div class="wh-status info">ℹ️ لا يوجد webhook مفعّل حالياً — أدخل التوكن</div>`;
+      }
+    } else {
+      res.innerHTML = `<div class="wh-status info">ℹ️ أدخل التوكن من @BotFather لتفعيل Webhook</div>`;
+    }
+  } catch(e){}
+}
+
+async function setWebhook(){
+  if (!currentWebhookBotId) return;
+  const tok = $('wh-token').value.trim();
+  if (!tok) return toast('أدخل التوكن أولاً', 'err');
+
+  const btn = $('wh-set-btn');
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> جارٍ التفعيل...';
+
+  try {
+    const d = await api(`/api/bots/${currentWebhookBotId}/set-webhook`, {
+      method: 'POST',
+      body: JSON.stringify({ token: tok })
+    });
+    $('wh-result').innerHTML = `<div class="wh-status ok">✅ <b>تم التفعيل بنجاح</b><br>` +
+      `🤖 ${escapeHtml(d.bot_name || '')} — @${escapeHtml(d.bot_username || '')}<br>` +
+      `🔗 ${escapeHtml(d.url)}</div>`;
+    toast('🪝 تم تفعيل Webhook', 'ok');
+    await loadBots();
+  } catch(e){
+    $('wh-result').innerHTML = `<div class="wh-status err">❌ ${escapeHtml(e.message)}</div>`;
+    toast('فشل: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+}
+
+async function removeWebhook(){
+  if (!currentWebhookBotId) return;
+  if (!confirm('إزالة Webhook من تلجرام؟')) return;
+
+  const btn = $('wh-remove-btn');
+  const old = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'جارٍ الإزالة...';
+
+  try {
+    await api(`/api/bots/${currentWebhookBotId}/remove-webhook`, { method: 'POST' });
+    $('wh-result').innerHTML = `<div class="wh-status info">ℹ️ تم إزالة Webhook</div>`;
+    toast('تم الإزالة', 'ok');
+    await loadBots();
+  } catch(e){
+    toast('فشل: ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+}
+
+// ═══ Upload ═══
 function switchUploadTab(which){
   $('utab-files').classList.toggle('active', which === 'files');
   $('utab-github').classList.toggle('active', which === 'github');
@@ -996,7 +1123,6 @@ function onFilesPicked(){
 
 async function submitUpload(){
   const isGithub = !$('panel-github').classList.contains('hidden');
-
   const btn = $('upload-submit');
   const old = btn.textContent;
   btn.disabled = true;
@@ -1018,17 +1144,14 @@ async function submitUpload(){
       const name = $('up-name').value.trim();
       if (!name) throw new Error('اسم البوت مطلوب');
       if (!uploadState.main) throw new Error('ملف البوت مطلوب');
-
       const fd = new FormData();
       fd.append('name', name);
       fd.append('main_file', uploadState.main);
       if (uploadState.req) fd.append('requirements', uploadState.req);
       uploadState.extras.forEach(f => fd.append('extras', f));
-
       await api('/api/bots/upload-files', { method: 'POST', body: fd });
       toast('✅ تم الرفع');
     }
-
     closeModal('upload-modal');
     resetUpload();
     await loadBots();
@@ -1052,7 +1175,7 @@ function resetUpload(){
   $('extras-list').innerHTML = '';
 }
 
-// ═══════════════ LOGS ═══════════════
+// ═══ Logs ═══
 async function openLogs(id, name){
   currentBotId = id;
   $('logs-title').textContent = '📋 ' + name;
@@ -1111,7 +1234,7 @@ function closeLogs(){
   closeModal('logs-modal');
 }
 
-// ═══════════════ EDITOR ═══════════════
+// ═══ Editor ═══
 async function openEditor(id, name){
   currentBotId = id;
   currentFilePath = null;
@@ -1203,7 +1326,7 @@ async function saveFile(){
 }
 
 async function newFile(){
-  const path = prompt('مسار الملف الجديد (مثال: config.py):');
+  const path = prompt('مسار الملف الجديد (مثال: config.php):');
   if (!path) return;
   try {
     await api(`/api/bots/${currentBotId}/file/create`, {
@@ -1252,7 +1375,7 @@ function closeEditor(){
   currentBotId = null;
 }
 
-// ═══════════════ INIT ═══════════════
+// ═══ Init ═══
 (async function init(){
   await new Promise(r => {
     if (typeof CodeMirror !== 'undefined') return r();
@@ -1260,7 +1383,6 @@ function closeEditor(){
     setTimeout(() => { clearInterval(i); r(); }, 3000);
   });
 
-  // Register service worker (PWA)
   if ('serviceWorker' in navigator){
     try { await navigator.serviceWorker.register('/sw.js'); } catch(e){}
   }
